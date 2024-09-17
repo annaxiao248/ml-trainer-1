@@ -1,0 +1,303 @@
+{
+  "about.developedInPartnership": "Developed in partnership with <link>Center for Computational Thinking and Design, Aarhus University</link>",
+  "about.softwareVersions": "Software versions",
+  "about.microbitHeartImageAlt": "micro:bit board with the 5 by 5 LED grid showing a heart",
+
+  "actions.close": "Close",
+  "actions.cancel": "Cancel",
+  "actions.reconnect": "Reconnect",
+
+  "alert.data.classNameLengthAlert": "Action names cannot be longer than {maxLen} characters.",
+  "alert.recording.disconnectedDuringRecording": "micro:bit disconnected during recording",
+
+  "alert.isRecording": "You are currently recording!",
+  "alert.isTesting": "You are currently recording!",
+  "alert.isTraining": "You are currently training a model!",
+  "alert.isNotConnected": "Your micro:bit should be connected!",
+  "alert.deleteGestureConfirm": "Are you sure you want to delete the action \"{action}\"?",
+
+  "alert.twoGestures": "You need at least two actions",
+  "alert.oneDataRepresentation": "You need at least one data representation",
+  "alert.recordingsPerGesture": "You need at least three examples per action",
+
+  "content.index.title": "machine learning tool",
+  "content.index.toolProcessCards.data.title": "Add data",
+  "content.index.toolProcessCards.data.description": "Add samples of the actions you would like your model to recognise (e.g. waving and clapping).",
+  "content.index.toolProcessCards.train.title": "Train model",
+  "content.index.toolProcessCards.train.description": "Ask the computer to use your training samples to train the machine learning model to recognise different actions.",
+  "content.index.toolProcessCards.model.title": "Test model",
+  "content.index.toolProcessCards.model.description": "Find out if it correctly recognises each action. Add more data to improve the model.",
+  "content.index.dataWarning.title": "Existing data samples will be lost",
+  "content.index.dataWarning.subtitleOne": "You have existing data that will be lost when you start a new session.",
+  "content.index.dataWarning.subtitleTwo": "To save your data, <link>download all data samples</link> before continuing.",
+
+  "content.data.classPlaceholderNewClass": "Name of action",
+  "content.data.classHelpHeader": "Action",
+  "content.data.classHelpBody": "The type of movement you want the machine learning tool to recognise e.g. 'wave' or 'clap'. ",
+  "content.data.classification": "Action",
+  "content.data.addAction.inputLabel": "Name of action field",
+  "content.data.data": "Data samples",
+  "content.data.addAction": "Add action",
+  "content.data.addActionWalkThrough": "Name an action you want the micro:bit to recognise",
+  "content.data.addRecordingWalkThrough": "Press to record a data sample or press button B on your micro:bit.",
+  "content.data.dataDescription": "Multiple samples of movement data collected in approximately 2 second bursts.",
+  "content.data.selectAndRecordAction": "Select action \"{action}\" and record data",
+  "content.data.recordAction": "Record data for action \"{action}\"",
+  "content.data.deleteAction": "Delete action \"{action}\"",
+  "content.data.deleteRecording": "Delete recording",
+  "content.data.recordingDialog.title": "Record data for action \"{action}\"",
+  "content.data.recordingDialog.go": "Go",
+  "content.data.recordingDialog.recording": "Recording",
+
+  "content.data.controlbar.button.menu": "Data actions",
+  "content.data.controlbar.button.clearData": "Delete all data samples",
+  "content.data.controlbar.button.clearData.confirm": "Are you sure you wish to delete all data samples?\nThis cannot be undone.",
+  "content.data.controlbar.button.downloadData": "Download all data samples",
+  "content.data.controlbar.button.uploadData": "Import data samples",
+
+  "content.data.recording.button.cancel": "Cancel recording",
+
+  "content.trainer.header": "Training a model",
+  "content.trainer.description": "The computer program spots patterns or differences in your data samples, and uses these to build a mathematical model that allows the micro:bit machine learning tool to recognise different actions when you move your micro:bit.",
+  "content.trainer.enoughdata.title": "Status: You've collected enough data to train the model.",
+  "content.trainer.training.title": "Status: Training the model in progress.",
+  "content.trainer.failure.header": "Training failed",
+  "content.trainer.failure.body": "The training did not result in a usable model. The reason for this is most likely the data used for training. If the data samples for different actions are too similar, this can result in issues in the training process.",
+  "content.trainer.failure.todo": "Return to the Add data page and change your data.",
+  "content.trainer.retrain.title": "Status: Your data samples have changed. You can retrain the model.",
+
+  "content.model.trainModelFirstHeading": "Test model",
+  "content.model.notEnoughDataInfoBody1": "You cannot test the model until it has been trained.",
+  "content.model.notEnoughDataInfoBody2": "You need at least 3 data samples for 2 actions to train a model.",
+  "content.model.trainModelBody": "You need to train your model before you can test it.",
+  "content.model.retrainModelBody": "You need to train your model with the current set of data samples before you can test it.",
+  "content.model.addData": "Add data",
+
+  "content.model.output.estimatedGesture.iconTitle": "Estimated action:",
+  "content.model.output.estimatedGesture.label": "Estimated action: \"{action}\"",
+  "content.model.output.estimatedGesture.descriptionTitle": "Estimated action",
+  "content.model.output.estimatedGesture.descriptionBody": "This is the action the model thinks you are currently doing.",
+  "content.model.output.estimatedGesture.none": "None",
+
+  "content.model.output.action.iconTitle": "Action",
+  "content.model.output.action.descriptionTitle": "Action",
+  "content.model.output.action.descriptionBody": "The type of movement you want the machine learning tool to recognise e.g. ‘wave’ or ‘clap’.",
+
+  "content.model.output.certainty.iconTitle": "Certainty",
+  "content.model.output.certainty.descriptionTitle": "Certainty",
+  "content.model.output.certainty.descriptionBody": "How confident the model is that you are currently doing each action.",
+
+  "content.model.output.recognitionPoint": "Recognition Point:",
+
+  "footer.start": "Start new session",
+  "footer.resume": "Resume session",
+  "footer.disconnectButton": "Disconnect",
+  "footer.connectButton": "Connect",
+  "footer.helpHeader": "Live graph",
+  "footer.helpContent": "This graph shows movement data from the microbit’s accelerometer in real time. Try moving your connected micro:bit to see the X, Y and Z axes change.",
+
+  "helpMenu.label": "Help",
+  "helpMenu.helpAndSupport": "Help & support",
+  "helpMenu.privacyPolicy": "Privacy policy",
+  "helpMenu.termsOfUse": "Terms of use",
+  "helpMenu.cookies": "Cookies",
+  "helpMenu.about": "About",
+
+  "homepage.Link": "Home page",
+
+  "resources.introduction.video": "introduction video",
+  "resources.getStarted.video": "get started video",
+
+  "menu.data.helpHeading": "1. Add data",
+
+  "menu.trainer.helpHeading": "2. Train model",
+  "menu.trainer.notConnected1": "You do not have a micro:bit connected",
+  "menu.trainer.notConnected2": " Select the ‘Connect’ button to connect a micro:bit.",
+  "menu.trainer.notEnoughDataHeader1": "Status: You don't have enough data.",
+  "menu.trainer.notEnoughDataInfoBody": "You need at least 3 data samples for 2 actions to train the model.",
+  "menu.trainer.TrainingFinished": "Status: Your model is trained.",
+
+  "menu.trainer.trainModelButton": "Train model",
+  "menu.trainer.addDataButton": "Add data",
+  "menu.trainer.addMoreDataButton": "Add more data",
+  "menu.trainer.testModelButton": "Test model",
+
+  "menu.model.helpHeading": "3. Test model",
+  "menu.model.noModel": "No model",
+  "menu.model.disconnect": "Disconnect output micro:bit",
+  "menu.model.connectInputMicrobit": "Connect micro:bit",
+
+  "connectMB.nextButton": "Next",
+  "connectMB.backButton": "Back",
+  "connectMB.tryAgain": "Try again",
+
+  "connectMB.usbTryAgain.heading": "Connect using WebUSB",
+  "connectMB.usbTryAgain.selectMicrobit": "You didn't select a micro:bit. Do you want to try again?",
+  "connectMB.usbTryAgain.closeTabs1": "Another process is connected to this device.",
+  "connectMB.usbTryAgain.closeTabs2": "Close any other tabs that may be using WebUSB (e.g. MakeCode, Python Editor, machine learning tool), or unplug and replug the micro:bit before trying again.",
+  "connectMB.usbTryAgain.replugMicrobit1": "A WebUSB error occurred.",
+  "connectMB.usbTryAgain.replugMicrobit2": "Please:",
+  "connectMB.usbTryAgain.replugMicrobit3": "check that this micro:bit does not have a battery pack connected",
+  "connectMB.usbTryAgain.replugMicrobit4": "unplug and replug the USB cable",
+
+  "connectMB.unsupportedMicrobit.header": "micro:bit V1 is not supported for connecting two micro:bits",
+  "connectMB.unsupportedMicrobit.explain": "Unfortunately, we only support using micro:bit V2 when connecting two micro:bits. You have connected a <link>micro:bit V1</link>.",
+  "connectMB.unsupportedMicrobit.withBluetooth": "Please use Web Bluetooth to connect to your micro:bit V1 instead.",
+  "connectMB.unsupportedMicrobit.ctaWithBluetooth": "Connect with Web Bluetooth",
+  "connectMB.unsupportedMicrobit.withoutBluetooth": "You can connect to micro:bit V1 using Web Bluetooth, however, this browser or device does not have Bluetooth enabled. <link>How to enable Bluetooth</link>.",
+
+  "connectMB.radioStart.heading": "What you need to connect using micro:bit radio",
+  "connectMB.radioStart.requirements1": "2 micro:bits",
+  "connectMB.radioStart.requirements2": "Computer",
+  "connectMB.radioStart.requirements2.subtitle": "with Internet & a USB port",
+  "connectMB.radioStart.requirements3": "Micro USB cable",
+  "connectMB.radioStart.requirements4": "Battery holder",
+  "connectMB.radioStart.requirements4.subtitle": "with batteries",
+  "connectMB.radioStart.switchBluetooth": "Connect using Web Bluetooth instead",
+
+  "connectMB.bluetoothStart.heading": "What you need to connect using Web Bluetooth",
+  "connectMB.bluetoothStart.requirements1": "1 micro:bit",
+  "connectMB.bluetoothStart.requirements2": "Computer",
+  "connectMB.bluetoothStart.requirements2.subtitle": "with Internet, a USB port & Web Bluetooth",
+  "connectMB.bluetoothStart.requirements3": "Micro USB cable",
+  "connectMB.bluetoothStart.requirements4": "Battery holder",
+  "connectMB.bluetoothStart.requirements4.subtitle": "with batteries",
+  "connectMB.bluetoothStart.switchRadio": "Connect using micro:bit radio instead",
+
+  "connectMB.connectCableMB1.heading": "Connect USB cable to micro:bit 1",
+  "connectMB.connectCableMB1.subtitle": "Connect micro:bit 1 to this computer with a USB cable so that the machine learning tool program can be downloaded to it. This is the micro:bit you will use to collect data samples.",
+
+  "connectMB.connectCableMB2.heading": "Connect USB cable to micro:bit 2",
+  "connectMB.connectCableMB2.subtitle": "Connect a second micro:bit to this computer with a USB cable.",
+
+  "connectMB.connectCable.heading": "Connect USB cable to micro:bit",
+  "connectMB.connectCable.subtitle": "Connect the micro:bit to this computer with a USB cable so that the machine learning tool program can be downloaded to it.",
+
+  "connectMB.connectCable.altText": "animation showing a USB cable being connected to the top of a micro:bit",
+  "connectMB.connectCable.skip": "Skip: program already downloaded?",
+
+  "connectMB.webPopup": "Select micro:bit",
+  "connectMB.webPopup.instruction.heading": "In the next popup",
+  "connectMB.webPopup.instruction1": "Choose your micro:bit",
+  "connectMB.webPopup.webUsb.instruction2": "Select 'Connect'",
+  "connectMB.webPopup.webBluetooth.instruction2": "Select 'Pair'",
+  "connectMB.webPopup.webUsb.altText": "WebUSB connection dialog with BBC micro:bit entry labelled 1 and Connect button labelled 2",
+  "connectMB.webPopup.webBluetooth.altText": "Web Bluetooth connection dialog with BBC micro:bit entry labelled 1 and Pair button labelled 2",
+
+  "connectMB.usbDownloadingMB1.header": "Downloading program to micro:bit 1",
+  "connectMB.usbDownloadingMB2.header": "Downloading program to micro:bit 2",
+  "connectMB.usbDownloading.header": "Downloading program to micro:bit",
+  "connectMB.usbDownloading.subtitle": "Please wait. Downloading program to micro:bit.",
+
+  "connectMB.connectBattery.heading": "Connect battery pack and disconnect USB",
+  "connectMB.connectBattery.subtitle": "Disconnect the micro:bit from the computer and connect the battery pack.",
+  "connectMB.connectBattery.link": "You can attach the micro:bit to your wrist or an object",
+
+  "connectMB.pattern.heading": "Copy pattern",
+  "connectMB.pattern.subtitle": "Copy the pattern displayed on the micro:bit.",
+  "connectMB.pattern.inputLabel": "Number of LEDs lit in column {colNum} on the micro:bit display",
+
+  "connectMB.bluetooth.heading": "Connect using Web Bluetooth",
+  "connectMB.bluetooth.cancelledConnection": "You didn't choose a micro:bit. Do you want to try again?",
+
+  "connectMB.radio.heading": "Connecting micro:bits",
+  "connectMB.connecting": "Connecting…",
+  "connectMB.reconnecting": "Reconnecting…",
+  "connectMB.bluetooth.invalidPattern": "The pattern you have drawn is invalid.",
+
+  "connectFailed.bluetoothHeading": "Failed to connect to micro:bit",
+  "connectFailed.bluetooth1": "The connection to the micro:bit could not be established.",
+  "reconnectFailed.radioHeading": "Failed to reconnect to micro:bits",
+  "reconnectFailed.bluetoothHeading": "Failed to reconnect to micro:bit",
+  "reconnectFailed.bluetooth1": "The connection to the micro:bit could not be re-established.",
+  "connectFailed.remoteHeading": "Failed to connect to micro:bit 1",
+  "connectFailed.remote1": "The connection to the wireless micro:bit could not be established.",
+  "reconnectFailed.remoteHeading": "Failed to reconnect to micro:bit 1",
+  "reconnectFailed.remote1": "The connection to the wireless micro:bit could not be re-established.",
+  "connectFailed.bridgeHeading": "Failed to connect to micro:bit 2",
+  "connectFailed.bridge1": "The connection to the micro:bit connected to your computer could not be established.",
+  "reconnectFailed.bridgeHeading": "Failed to reconnect to micro:bit 2",
+  "reconnectFailed.bridge1": "The connection to the micro:bit connected to your computer could not be re-established.",
+  "reconnectFailed.subtitle": "Follow these instructions to restart the connection process.",
+
+  "disconnectedWarning.bluetoothHeading": "micro:bit connection lost",
+  "disconnectedWarning.bluetooth1": "The connection to the micro:bit has been lost.",
+  "disconnectedWarning.bluetooth2": "Please check that the micro:bit:",
+  "disconnectedWarning.bluetooth3": "is powered on (the red light on the back of the micro:bit should be on)",
+  "disconnectedWarning.bluetooth4": "is close to the computer",
+
+  "disconnectedWarning.remoteHeading": "micro:bit 1 connection lost",
+  "disconnectedWarning.remote1": "The connection to the wireless micro:bit has been lost.",
+
+  "disconnectedWarning.bridgeHeading": "micro:bit 2 connection lost",
+  "disconnectedWarning.bridge1": "The connection to the micro:bit connected to your computer has been lost.",
+
+  "connectMB.output.header": "A micro:bit is already connected",
+
+  "performanceWarning.heading": "Low quality connection",
+  "performanceWarning.content1": "The quality of data being received from your micro:bit is low. This could be due to a connection issue.",
+  "performanceWarning.content2": "Do you want to restart the connection process to try to improve performance?",
+  "performanceWarning.troubleshoot": "Troubleshoot problems with connection quality",
+  "performanceWarning.ignore": "Don't show this again",
+  "performanceWarning.nextButton": "Next",
+
+  "connectMB.troubleshoot": "Troubleshoot problems with connecting to your micro:bit",
+  "connectMB.troubleshooting": "Troubleshooting",
+
+  "connectMB.usb.firmwareBroken.heading": "Firmware update required",
+  "connectMB.usb.firmwareBroken.content1": "Connecting to the micro:bit failed because the firmware on your micro:bit is too old.",
+  "connectMB.usb.firmwareBroken.content2": "You must <link>update your firmware</link> before you can connect to this micro:bit.",
+  "connectMB.usb.firmwareBroken.content3": "Troubleshoot problems with connecting to your micro:bit",
+  "connectMB.usb.firmwareBroken.skip": "Skip and transfer manually",
+
+  "connectMB.outputMB.same": "Use the same micro:bit",
+  "connectMB.outputMB.different": "Connect another micro:bit",
+  "connectMB.outputMB.sameButton": "Same",
+  "connectMB.outputMB.otherButton": "Other",
+
+  "info.label": "More information about \"{item}\"",
+
+  "languageDialog.title": "Language",
+
+  "popup.compatibility.header": "This browser is not supported",
+  "popup.compatibility.explain": "Unfortunately, WebUSB and Web Bluetooth are not supported by this browser. This means you cannot connect to a micro:bit to record the data samples needed to train a machine learning model.",
+  "popup.compatibility.advice": "We recommend Google Chrome or Microsoft Edge so you can connect directly to your micro:bit.",
+
+  "connectMB.transferHex.heading": "Transfer saved hex file to micro:bit",
+  "connectMB.transferHex.manualDownload": "If the file did not automatically download then <link>please download the file here</link>.",
+  "connectMB.transferHex.message": "Drag the hex file from your Downloads folder to the MICROBIT drive.",
+  "connectMB.transferHex.altText": "animation of dragging a hex file from the downloads folder onto the micro:bit drive or device listed in the file explorer",
+
+  "compatibility.platform.notSupported": "The tool is not supported on your current platform.",
+  "compatibility.platform.notSupported.joinDesktop": "Please use Google Chrome or Microsoft Edge on a computer.",
+  "compatibility.webgl.notSupported": "WebGL not available. Enable WebGL to see 3D data view.",
+
+  "loading": "loading",
+
+  "popup.outdatedmicrobit.header": "Your micro:bit has an outdated machine learning tool program",
+  "popup.outdatedmicrobit.text": "We strongly recommend that you update it now, as some features may not work as expected.",
+  "popup.outdatedmicrobit.text.mkcd": "Open the newest MakeCode template to use the updated extension.",
+  "popup.outdatedmicrobit.button.later": "Later",
+  "popup.outdatedmicrobit.button.update": "Update now",
+  "popup.outdatedmicrobit.button.update.mkcd": "Open MakeCode",
+
+  "popup.appVersionRedirect.header": "Are you a UK* primary school teacher?",
+  "popup.appVersionRedirect.explain": "If you are a UK* primary school teacher, you will be redirected to the version of this tool designed for the UK's BBC micro:bit playground survey.",
+  "popup.appVersionRedirect.button.redirect": "I'm a UK primary school teacher",
+  "popup.appVersionRedirect.button.stay": "I'm not a UK primary school teacher",
+  "popup.appVersionRedirect.uk": "*includes crown dependencies Jersey, Guernsey and the Isle of Man",
+
+  "arrowIconRight.altText": "arrow pointing right",
+  "arrowIconDown.altText": "arrow pointing down",
+
+  "settings.label": "Settings",
+  "prototype.warning": "This is a prototype version and is subject to change without notice",
+
+  "sign-up.title": "Join our testing community",
+  "sign-up.content": "Welcome to our prototype of the micro:bit machine learning tool. We’d love you to try it out and give us your feedback. Please enter your email so we can keep you updated as it evolves.",
+  "sign-up.email-label": "Email",
+  "sign-up.error": "Something went wrong. Please try again or <link>contact us</link>.",
+  "sign-up.invalid": "Please enter a valid email address",
+  "sign-up.sign-up-action": "Sign up",
+  "sign-up.skip-action": "Skip"
+}
