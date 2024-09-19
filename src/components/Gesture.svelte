@@ -154,6 +154,7 @@
           const recording = { ID: Date.now(), data: newData } as RecordingData;
           addRecording(gesture.getId(), recording);
           logEvent({ type: 'Data', action: 'Add recording' });
+
         }
       } else {
         alertUser($t('alert.recording.disconnectedDuringRecording'));
@@ -312,7 +313,7 @@
       {/if}
       <label for="gestureName" class="sr-only"
         >{$t('content.data.addAction.inputLabel')}</label>
-      <input
+      <select
         use:init
         name="gestureName"
         class="w-40 col-start-2 p-2 col-end-5 transition ease rounded bg-gray-100 placeholder-gray-500 outline-none focus-visible:ring-4 focus-visible:ring-offset-1 focus-visible:ring-ring"
@@ -321,7 +322,13 @@
         bind:value={$nameBind}
         on:keypress={onTitleKeypress}
         on:paste={onTitlePaste}
-        on:focus={selectGesture} />
+        on:focus={selectGesture}>
+        <option value="swing">Swing</option>
+        <option value="shake">Shake</option>
+        <option value="still">Still</option>
+        <option value="jump">Jump</option>
+        <option value="other">Other</option>
+      </select>
     </div>
   </GestureTilePart>
 </div>
