@@ -11,7 +11,7 @@
   import CloseIcon from 'virtual:icons/ri/close-line';
   import { t } from '../../i18n';
   import IconButton from '../IconButton.svelte';
-  import { onDestroy } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
 
   export let hasCloseButton = true;
   export let closeOnOutsideClick: boolean = true;
@@ -21,6 +21,7 @@
   export let hideContent: boolean = false;
 
   let finalFocusRef: Element | null;
+  let isMobile = false; // To detect if the device is mobile
 
   const onOpenDialog = () => {
     finalFocusRef = document.activeElement;
@@ -34,7 +35,6 @@
   };
 
   const onOpenChange: CreateDialogProps['onOpenChange'] = ({ curr, next }) => {
-    // Use curr so we don't call onCloseDialog() on page load.
     if (curr && !next) {
       onCloseDialog();
     } else if (!curr && next) {
@@ -70,7 +70,7 @@
 
   const { open } = states;
 
-  // Syncing inside and outside component states to minimise prop changes
+  // Syncing inside and outside component states to minimize prop changes
   const sync = createSync(states);
   $: sync.open(isOpen, v => (isOpen = v));
 
@@ -79,12 +79,25 @@
     onOpenDialog();
     prevOpen = isOpen;
   } else if (prevOpen && !isOpen) {
-    // Use prevOpen so we don't call onCloseDialog() on page load.
     prevOpen = isOpen;
     onCloseDialog();
   }
 
   onDestroy(() => document.removeEventListener('keydown', keyListener));
+
+  // Detect mobile screen size
+  const checkIfMobile = () => {
+    isMobile = window.innerWidth <= 768;
+  };
+
+  // Run check on mount and listen for window resize events
+  onMount(() => {
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  });
 </script>
 
 <div class="fixed z-10" use:melt={$portalled}>
@@ -93,15 +106,19 @@
       class="fixed top-0 left-0 h-screen w-screen flex justify-center items-center bg-black/50 bg-blend-darken"
       use:melt={$overlay}
       transition:fade={{ duration: 100 }}>
+      
+      <!-- Adjusting the dialog size based on the isMobile variable -->
       <div
         use:melt={$content}
-        class="w-min h-min border-gray-200 border border-solid relative bg-white rounded-lg p-8 z-15"
+        class="border-gray-200 border border-solid relative bg-white rounded-lg p-8 z-15"
+        style="width: {isMobile ? '90%' : '500px'}; height: {isMobile ? 'auto' : 'auto'};"
         class:hidden={hideContent}
         transition:scale={{
           duration: 200,
           start: 0.9,
           easing: quintOut,
         }}>
+        
         {#if hasCloseButton}
           <div class="absolute right-2 top-2">
             <IconButton
@@ -112,13 +129,15 @@
             </IconButton>
           </div>
         {/if}
+
         <div class={$$restProps.class || ''}>
           <h2 use:melt={$title} class="text-xl font-bold">
             <slot name="heading" />
           </h2>
           <slot name="body" />
         </div>
-        <!-- Needed for the connection flow dialogs for now -->
+
+        <!-- Fallback for content if no heading or body slots are provided -->
         {#if !$$slots.heading && !$$slots.body}
           <slot />
         {/if}
