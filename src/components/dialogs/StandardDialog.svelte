@@ -70,7 +70,6 @@
 
   const { open } = states;
 
-  // Syncing inside and outside component states to minimize prop changes
   const sync = createSync(states);
   $: sync.open(isOpen, v => (isOpen = v));
 
@@ -106,8 +105,7 @@
       class="fixed top-0 left-0 h-screen w-screen flex justify-center items-center bg-black/50 bg-blend-darken"
       use:melt={$overlay}
       transition:fade={{ duration: 100 }}>
-      
-      <!-- Adjusting the dialog size based on the isMobile variable -->
+
       <div
         use:melt={$content}
         class="border-gray-200 border border-solid relative bg-white rounded-lg p-8 z-15"
@@ -119,28 +117,31 @@
           easing: quintOut,
         }}>
         
-        {#if hasCloseButton}
-          <div class="absolute right-2 top-2">
-            <IconButton
-              onClick={onCloseDialog}
-              useAction={$close.action}
-              ariaLabel={$t('actions.close')}>
-              <CloseIcon class="text-xl m-1" />
-            </IconButton>
+        <!-- Added horizontal scroll for content overflow -->
+        <div class="overflow-x-auto">
+          {#if hasCloseButton}
+            <div class="absolute right-2 top-2">
+              <IconButton
+                onClick={onCloseDialog}
+                useAction={$close.action}
+                ariaLabel={$t('actions.close')}>
+                <CloseIcon class="text-xl m-1" />
+              </IconButton>
+            </div>
+          {/if}
+
+          <div class={$$restProps.class || ''}>
+            <h2 use:melt={$title} class="text-xl font-bold">
+              <slot name="heading" />
+            </h2>
+            <slot name="body" />
           </div>
-        {/if}
 
-        <div class={$$restProps.class || ''}>
-          <h2 use:melt={$title} class="text-xl font-bold">
-            <slot name="heading" />
-          </h2>
-          <slot name="body" />
+          <!-- Fallback for content if no heading or body slots are provided -->
+          {#if !$$slots.heading && !$$slots.body}
+            <slot />
+          {/if}
         </div>
-
-        <!-- Fallback for content if no heading or body slots are provided -->
-        {#if !$$slots.heading && !$$slots.body}
-          <slot />
-        {/if}
       </div>
     </div>
   {/if}
