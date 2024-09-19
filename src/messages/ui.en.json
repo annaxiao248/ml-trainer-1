@@ -117,7 +117,7 @@
   "menu.trainer.notEnoughDataInfoBody": "You need at least 3 data samples for 2 actions to train the model.",
   "menu.trainer.TrainingFinished": "Status: Your model is trained.",
 
-  "menu.trainer.trainModelButton": "Train model",
+  "menu.trainer.trainModelButton": "Upload data to db and train model",
   "menu.trainer.addDataButton": "Add data",
   "menu.trainer.addMoreDataButton": "Add more data",
   "menu.trainer.testModelButton": "Test model",

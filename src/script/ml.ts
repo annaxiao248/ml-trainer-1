@@ -23,6 +23,8 @@ import Repositories from './repository/Repositories';
 import { getPrediction } from './getPrediction';
 import { TrainingStatus } from './domain/Model';
 import { logEvent } from './utils/logging';
+import { db } from './utils/firebase/firebase';
+import { collection, addDoc } from 'firebase/firestore'; 
 
 let text: (key: string, vars?: object) => string;
 t.subscribe(t => (text = t));
@@ -76,7 +78,7 @@ export async function trainModel(): Promise<tf.LayersModel | void> {
     return;
   }
 
-  // Freeze modelSetting untill next training
+  // Freeze modelSetting until next training
   modelSettings = {
     axes: get(settings).includedAxes,
     filters: get(settings).includedFilters,
@@ -84,6 +86,20 @@ export async function trainModel(): Promise<tf.LayersModel | void> {
 
   // Fetch data
   const gestureData = get(gestures);
+  console.log('gestureData:', gestureData);
+
+  // Upload data to Firestore
+  try {
+    console.log('Uploading data to Firestore');
+    await addDoc(collection(db, 'gestureData'), {
+      gestureData
+    });
+    console.log('Data uploaded to Firestore');
+  } catch (e) {
+    console.error('Error adding document: ', e);
+  }
+
+
   const features: Array<number[]> = [];
   const labels: Array<number[]> = [];
   const numberofClasses: number = gestureData.length;
@@ -101,6 +117,7 @@ export async function trainModel(): Promise<tf.LayersModel | void> {
       labels.push(label);
     });
   });
+  
 
   const tensorFeatures = tf.tensor(features);
   const tensorLabels = tf.tensor(labels);
@@ -125,6 +142,7 @@ export async function trainModel(): Promise<tf.LayersModel | void> {
     trainingStatus.set(TrainingStatus.Failure);
     console.error('tensorflow training process failed:', err);
   }
+
   return nn;
 }
 
