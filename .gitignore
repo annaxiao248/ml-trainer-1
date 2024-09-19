@@ -14,7 +14,7 @@
 
 !.vscode/settings.json
 
-.env
+# .env
 
 
 /src/.DS_Store
