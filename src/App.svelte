@@ -34,7 +34,6 @@
     isCompatibilityWarningDialogOpen,
   } from './script/stores/uiStore';
   import { fetchBrowserInfo } from './script/utils/api';
-  import IncompatiblePlatformView from './views/IncompatiblePlatformView.svelte';
   import OverlayView from './views/OverlayView.svelte';
   import PageContentView from './views/PageContentView.svelte';
   import SignUpDialog from './components/dialogs/SignUpDialog.svelte';
@@ -79,51 +78,47 @@
 {#if !$isLoading}
   <Router>
     <div class="sr-only" bind:this={routeAnnouncementEl} aria-live="polite" />
-    {#if !$compatibility.platformAllowed}
-      <!-- Denies mobile users access to the platform -->
-      <IncompatiblePlatformView />
-    {:else}
-      <div class="h-full w-full m-0 relative flex">
-        <OverlayView />
-        <!-- Wait for consent dialog to avoid a clash -->
-        {#if $consent}
-          <CompatibilityWarningDialog />
-          <AppVersionRedirectDialog isOpen={showVersionRedirectDialog} />
-          <SignUpDialog isOpen={showSignUpDialog} />
-        {/if}
-        <div class="w-full flex flex-col bg-backgrounddark">
-          <ControlBar>
-            <div class="flex items-center divide-x h-full">
-              <div class="h-32px flex items-center">
-                <img class="pr-3 w-166px" src={microbitLogoImage} alt="micro:bit" />
-              </div>
-              <div class="h-32px flex items-center">
-                <img
-                  class="pl-3 mt-2px w-253px"
-                  src={appNameImage}
-                  alt={$t('content.index.title')} />
-              </div>
+    <!-- Removed the platform check and IncompatiblePlatformView -->
+    <div class="h-full w-full m-0 relative flex">
+      <OverlayView />
+      <!-- Wait for consent dialog to avoid a clash -->
+      {#if $consent}
+        <CompatibilityWarningDialog />
+        <AppVersionRedirectDialog isOpen={showVersionRedirectDialog} />
+        <SignUpDialog isOpen={showSignUpDialog} />
+      {/if}
+      <div class="w-full flex flex-col bg-backgrounddark">
+        <ControlBar>
+          <div class="flex items-center divide-x h-full">
+            <div class="h-32px flex items-center">
+              <img class="pr-3 w-166px" src={microbitLogoImage} alt="micro:bit" />
             </div>
-            <div class="flex gap-5">
-              <a
-                class="text-xl p-2 rounded-full outline-none focus-visible:ring-ringBright focus-visible:ring-4 focus-visible:ring-offset-1"
-                href={Paths.HOME}
-                on:click|preventDefault={() => navigate(Paths.HOME)}>
-                <span class="sr-only">{$t('homepage.Link')}</span>
-                <HomeIcon class="text-white" aria-hidden />
-              </a>
-              <SettingsMenu />
-              <HelpMenu />
+            <div class="h-32px flex items-center">
+              <img
+                class="pl-3 mt-2px w-253px"
+                src={appNameImage}
+                alt={$t('content.index.title')} />
             </div>
-          </ControlBar>
-          <PrototypeVersionWarning />
-
-          <div class="relative flex-1 flex-row">
-            <PageContentView />
           </div>
+          <div class="flex gap-5">
+            <a
+              class="text-xl p-2 rounded-full outline-none focus-visible:ring-ringBright focus-visible:ring-4 focus-visible:ring-offset-1"
+              href={Paths.HOME}
+              on:click|preventDefault={() => navigate(Paths.HOME)}>
+              <span class="sr-only">{$t('homepage.Link')}</span>
+              <HomeIcon class="text-white" aria-hidden />
+            </a>
+            <SettingsMenu />
+            <HelpMenu />
+          </div>
+        </ControlBar>
+        <PrototypeVersionWarning />
+
+        <div class="relative flex-1 flex-row">
+          <PageContentView />
         </div>
       </div>
-    {/if}
+    </div>
   </Router>
   <ConnectDialogContainer />
 {/if}
