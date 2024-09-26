@@ -323,13 +323,13 @@
         on:keypress={onTitleKeypress}
         on:paste={onTitlePaste}
         on:focus={selectGesture}>
-        <option value="swing">Swing</option>
-        <option value="shake">Shake</option>
+        <option value="rest">Rest</option>
         <option value="kick">Kick</option>
-        <option value="jog">Jog</option>
         <option value="trap">Trap</option>
         <option value="jump">Jump</option>
-        <option value="rest">Rest</option>
+        <option value="jog">Jog</option>
+        <option value="swing">Swing</option>
+        <option value="shake">Shake</option>
         <option value="other">Other</option>
       </select>
     </div>
