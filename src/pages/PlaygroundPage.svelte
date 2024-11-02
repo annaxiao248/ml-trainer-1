@@ -9,6 +9,7 @@
   import Model from '../script/domain/Model';
   import LayersModelTrainer from '../script/mlmodels/LayersModelTrainer';
   import KNNModelTrainer from '../script/mlmodels/KNNModelTrainer';
+  import CNNModelTrainer from '../script/mlmodels/CNNModelTrainer';
   import { classifier, engine, gestures, liveData } from '../script/stores/Stores';
   import AccelerometerClassifierInput from '../script/mlmodels/AccelerometerClassifierInput';
   import PlaygroundGestureView from '../components/playground/PlaygroundGestureView.svelte';
@@ -29,7 +30,7 @@
     playgroundContext.addMessage('training model...');
     model
       .train(
-        new KNNModelTrainer({
+        new CNNModelTrainer({
           noOfEpochs: 80,
         }),
       )
