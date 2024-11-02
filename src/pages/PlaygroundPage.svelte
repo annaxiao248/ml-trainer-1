@@ -32,6 +32,7 @@
       .train(
         new CNNModelTrainer({
           noOfEpochs: 80,
+          learningRate: 0.001,
         }),
       )
       .then(() => {
