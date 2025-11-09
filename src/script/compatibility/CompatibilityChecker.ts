@@ -7,7 +7,7 @@
 import Bowser from 'bowser';
 import { nonAllowedPlatforms } from './CompatibilityList';
 import { isDevMode } from '../environment';
-import { isWebBluetoothAvailable, isCapacitorAvailable, shouldUseCapacitorBluetooth } from '../utils/platformDetection';
+import { isWebBluetoothAvailable, isCapacitorAvailable, detectPlatform } from '../utils/platformDetection';
 
 export type CompatibilityStatus = {
   bluetooth: boolean;
@@ -39,8 +39,13 @@ export function checkCompatibility(): CompatibilityStatus {
   }
   const isPlatformAllowed = isDevMode || !nonAllowedPlatforms.includes(platformType);
 
-  // Bluetooth is available if Web Bluetooth is available OR if Capacitor Bluetooth should be used
-  const bluetoothAvailable = isWebBluetoothAvailable() || shouldUseCapacitorBluetooth();
+  // Bluetooth is available if:
+  // 1. Web Bluetooth is available (Android/Desktop), OR
+  // 2. Capacitor is available AND we're on iOS (native app)
+  // Note: iOS Safari doesn't support Web Bluetooth, so it requires the native Capacitor app
+  const platform = detectPlatform();
+  const isIOS = platform === 'ios';
+  const bluetoothAvailable = isWebBluetoothAvailable() || (isCapacitorAvailable() && isIOS);
 
   return {
     bluetooth: bluetoothAvailable,

@@ -42,17 +42,27 @@ export default defineConfig(({ mode }) => {
         input: 'index.html',
       },
     },
-    server: commonEnv.API_PROXY
-      ? {
-          port: 5173,
-          proxy: {
-            '/api/v1': {
-              target: commonEnv.API_PROXY,
-              changeOrigin: true,
+    server: {
+      port: 5173,
+      host: true, // Allow external connections (needed for ngrok)
+      allowedHosts: [
+        '.ngrok.io',
+        '.ngrok-free.app',
+        '.ngrok.app',
+        'localhost',
+        '127.0.0.1',
+      ],
+      ...(commonEnv.API_PROXY
+        ? {
+            proxy: {
+              '/api/v1': {
+                target: commonEnv.API_PROXY,
+                changeOrigin: true,
+              },
             },
-          },
-        }
-      : undefined,
+          }
+        : {}),
+    },
     test: {
       globals: true,
       setupFiles: ['./src/setup_tests.ts'],

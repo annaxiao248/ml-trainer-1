@@ -9,10 +9,15 @@
   import StandardDialog from './StandardDialog.svelte';
   import StandardButton from '../StandardButton.svelte';
   import { isCompatibilityWarningDialogOpen } from '../../script/stores/uiStore';
+  import { detectPlatform, isCapacitorAvailable } from '../../script/utils/platformDetection';
 
   const onClose = () => {
     $isCompatibilityWarningDialogOpen = false;
   };
+
+  const platform = detectPlatform();
+  const isIOS = platform === 'ios';
+  const isIOSInSafari = isIOS && !isCapacitorAvailable();
 </script>
 
 <StandardDialog
@@ -25,8 +30,13 @@
   <svelte:fragment slot="body">
     <div class="space-y-5">
       <div class="space-y-2">
-        <p>{$t('popup.compatibility.explain')}</p>
-        <p>{$t('popup.compatibility.advice')}</p>
+        {#if isIOSInSafari}
+          <p>{$t('popup.compatibility.ios.explain')}</p>
+          <p>{$t('popup.compatibility.ios.advice')}</p>
+        {:else}
+          <p>{$t('popup.compatibility.explain')}</p>
+          <p>{$t('popup.compatibility.advice')}</p>
+        {/if}
       </div>
       <div class="flex justify-end">
         <StandardButton onClick={onClose} type="primary"

@@ -262,6 +262,8 @@
   "popup.compatibility.header": "This browser is not supported",
   "popup.compatibility.explain": "Unfortunately, WebUSB and Web Bluetooth are not supported by this browser. This means you cannot connect to a micro:bit to record the data samples needed to train a machine learning model.",
   "popup.compatibility.advice": "We recommend Google Chrome or Microsoft Edge so you can connect directly to your micro:bit.",
+  "popup.compatibility.ios.explain": "Bluetooth is not available in web browsers on iOS (including Safari and Chrome). Apple restricts Web Bluetooth API access, so browsers on iOS cannot connect to Bluetooth devices.",
+  "popup.compatibility.ios.advice": "To use Bluetooth with your micro:bit on an iPad or iPhone, you must build and install the native iOS app using Capacitor. See IOS_BLUETOOTH_SETUP.md for instructions. You can continue using Safari/Chrome to test other features, but Bluetooth connections will not be available.",
 
   "connectMB.transferHex.heading": "Transfer saved hex file to micro:bit",
   "connectMB.transferHex.manualDownload": "If the file did not automatically download then <link>please download the file here</link>.",
