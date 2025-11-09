@@ -7,6 +7,7 @@
 import Bowser from 'bowser';
 import { nonAllowedPlatforms } from './CompatibilityList';
 import { isDevMode } from '../environment';
+import { isWebBluetoothAvailable, isCapacitorAvailable, shouldUseCapacitorBluetooth } from '../utils/platformDetection';
 
 export type CompatibilityStatus = {
   bluetooth: boolean;
@@ -38,8 +39,11 @@ export function checkCompatibility(): CompatibilityStatus {
   }
   const isPlatformAllowed = isDevMode || !nonAllowedPlatforms.includes(platformType);
 
+  // Bluetooth is available if Web Bluetooth is available OR if Capacitor Bluetooth should be used
+  const bluetoothAvailable = isWebBluetoothAvailable() || shouldUseCapacitorBluetooth();
+
   return {
-    bluetooth: !!navigator.bluetooth,
+    bluetooth: bluetoothAvailable,
     usb: !!navigator.usb,
     platformAllowed: isPlatformAllowed,
     webGL: webGL,

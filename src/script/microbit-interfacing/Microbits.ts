@@ -6,7 +6,7 @@
 
 import MicrobitConnection, { DeviceRequestStates } from './MicrobitConnection';
 import MicrobitUSB from './MicrobitUSB';
-import { MicrobitBluetooth, startBluetoothConnection } from './MicrobitBluetooth';
+import { startBluetoothConnection, MicrobitBluetoothConnection } from './BluetoothMicrobitFactory';
 import { startSerialConnection } from './MicrobitSerial';
 
 export type FlashStage = 'bluetooth' | 'radio-remote' | 'radio-bridge';
@@ -43,13 +43,13 @@ export const getHexFileUrl = (
 
 class Microbits {
   private static inputMicrobit: MicrobitConnection | undefined = undefined;
-  private static outputMicrobit: MicrobitBluetooth | undefined = undefined;
+  private static outputMicrobit: MicrobitBluetoothConnection | undefined = undefined;
 
   public static getInputMicrobit(): MicrobitConnection | undefined {
     return this.inputMicrobit;
   }
 
-  public static getOutputMicrobit(): MicrobitBluetooth | undefined {
+  public static getOutputMicrobit(): MicrobitBluetoothConnection | undefined {
     return this.outputMicrobit;
   }
 
@@ -73,12 +73,14 @@ class Microbits {
   public static async assignBluetoothOutput(name: string): Promise<boolean> {
     // If it's the input micro:bit then grab the input micro:bit reference
     // use it as the output micro:bit and connect it in that mode too.
-    if (
-      this.inputMicrobit instanceof MicrobitBluetooth &&
-      this.inputMicrobit.name === name
-    ) {
+    const isBluetoothConnection = 
+      this.inputMicrobit &&
+      'name' in this.inputMicrobit &&
+      this.inputMicrobit.name === name;
+    
+    if (isBluetoothConnection) {
       await this.inputMicrobit.connect(DeviceRequestStates.OUTPUT);
-      this.outputMicrobit = this.inputMicrobit;
+      this.outputMicrobit = this.inputMicrobit as MicrobitBluetoothConnection;
       return true;
     } else {
       this.outputMicrobit = await startBluetoothConnection(
