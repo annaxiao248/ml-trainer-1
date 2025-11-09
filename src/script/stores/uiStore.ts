@@ -22,9 +22,98 @@ import { logError, logEvent } from '../utils/logging';
 let text: (key: string, vars?: object) => string;
 t.subscribe(t => (text = t));
 
+// Initial compatibility check
 const compatibilityResult = checkCompatibility();
 export const compatibility = writable<CompatibilityStatus>(compatibilityResult);
-if (compatibilityResult.bluetooth) {
+
+// Re-check compatibility after Capacitor is ready (for iOS native apps)
+// This is needed because Capacitor might not be available at module load time
+if (typeof window !== 'undefined') {
+  // Multiple re-check strategies to ensure we catch Capacitor when it's ready
+  let recheckCount = 0;
+  const maxRechecks = 20; // Check for up to 2 seconds (20 * 100ms)
+  
+  const scheduleRecheck = (delay: number) => {
+    setTimeout(() => {
+      recheckCount++;
+      recheckCompatibility();
+      if (recheckCount < maxRechecks) {
+        scheduleRecheck(100);
+      }
+    }, delay);
+  };
+  
+  // Immediate re-check
+  scheduleRecheck(50);
+  
+  // Re-check when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      recheckCompatibility();
+      scheduleRecheck(100);
+    });
+  } else {
+    scheduleRecheck(100);
+  }
+  
+  // Re-check when Capacitor becomes available
+  const checkCapacitor = () => {
+    if (typeof (window as any).Capacitor !== 'undefined') {
+      console.log('✅ Capacitor detected, rechecking compatibility');
+      recheckCompatibility();
+    } else if (recheckCount < maxRechecks) {
+      setTimeout(checkCapacitor, 50);
+    }
+  };
+  checkCapacitor();
+  
+  // Also listen for any URL changes (in case the URL isn't set immediately)
+  let lastUrl = document.URL;
+  const checkUrlChange = () => {
+    const currentUrl = document.URL;
+    if (currentUrl !== lastUrl) {
+      console.log('📍 URL changed, rechecking compatibility:', currentUrl);
+      lastUrl = currentUrl;
+      recheckCompatibility();
+    }
+  };
+  
+  // Check URL periodically
+  setInterval(checkUrlChange, 200);
+}
+
+function recheckCompatibility() {
+  const newResult = checkCompatibility();
+  const current = get(compatibility);
+  
+  // Only update if something changed (especially bluetooth availability)
+  if (newResult.bluetooth !== current.bluetooth || 
+      newResult.usb !== current.usb ||
+      newResult.platformAllowed !== current.platformAllowed ||
+      newResult.webGL !== current.webGL) {
+    compatibility.set(newResult);
+    
+    // If bluetooth is now available, check Web Bluetooth availability
+    if (newResult.bluetooth && navigator.bluetooth) {
+      navigator.bluetooth
+        ?.getAvailability()
+        .then(bluetoothAvailable => {
+          compatibility.update(s => {
+            logEvent({
+              type: 'Device',
+              action: 'Bluetooth available',
+              value: s.bluetooth && bluetoothAvailable ? 1 : 0,
+            });
+            s.bluetooth = s.bluetooth && bluetoothAvailable;
+            return s;
+          });
+        })
+        .catch(e => logError('Failed to get Bluetooth availability', e));
+    }
+  }
+}
+
+if (compatibilityResult.bluetooth && navigator.bluetooth) {
   navigator.bluetooth
     ?.getAvailability()
     .then(bluetoothAvailable => {
