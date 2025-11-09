@@ -1,0 +1,28 @@
+PODS:
+  - Capacitor (7.4.4):
+    - CapacitorCordova
+  - CapacitorCommunityBluetoothLe (7.2.0):
+    - Capacitor
+  - CapacitorCordova (7.4.4)
+
+DEPENDENCIES:
+  - "Capacitor (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorCommunityBluetoothLe (from `../../node_modules/@capacitor-community/bluetooth-le`)"
+  - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+
+EXTERNAL SOURCES:
+  Capacitor:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorCommunityBluetoothLe:
+    :path: "../../node_modules/@capacitor-community/bluetooth-le"
+  CapacitorCordova:
+    :path: "../../node_modules/@capacitor/ios"
+
+SPEC CHECKSUMS:
+  Capacitor: 09d9ff8e9618e8c4b3cab2bbee34a17215dd2fef
+  CapacitorCommunityBluetoothLe: ed9743fc77d7feca5c017e28bd9255a656615cc3
+  CapacitorCordova: bf648a636f3c153f652d312ae145fb508b6ffced
+
+PODFILE CHECKSUM: 76fc7effa5ee8a59363cbeb5754b229c51a9b525
+
+COCOAPODS: 1.16.2
