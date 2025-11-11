@@ -25,6 +25,7 @@
     radioBridgeRemoteDeviceId,
   } from '../../script/stores/connectionStore';
   import { compatibility, state } from '../../script/stores/uiStore';
+  import { scanCapacitorBluetoothDevices, startBluetoothConnectionWithDevice } from '../../script/microbit-interfacing/BluetoothMicrobitFactory';
   import StandardDialog from '../dialogs/StandardDialog.svelte';
   import WebBluetoothTryAgain from './WebBluetoothTryAgain.svelte';
   import WebUsbTryAgain, { USBTryAgainType } from './WebUsbTryAgain.svelte';
@@ -33,6 +34,7 @@
   import ConnectBatteryDialog from './bluetooth/ConnectBatteryDialog.svelte';
   import ConnectCableDialog from './bluetooth/ConnectCableDialog.svelte';
   import SelectMicrobitDialogBluetooth from './bluetooth/SelectMicrobitDialogBluetooth.svelte';
+  import SelectMicrobitDialogCapacitor from './bluetooth/SelectMicrobitDialogCapacitor.svelte';
   import StartBluetoothDialog from './bluetooth/StartBluetoothDialog.svelte';
   import ConnectingMicrobits from './radio/ConnectingMicrobits.svelte';
   import StartRadioDialog from './radio/StartRadioDialog.svelte';
@@ -47,6 +49,8 @@
   let flashStage: FlashStage = usb ? 'bluetooth' : 'radio-remote';
   let usbTryAgainType: USBTryAgainType = 'replug microbit';
   let flashProgress = 0;
+  let capacitorDevices: Array<{ deviceId: string; name?: string; rssi?: number }> = [];
+  let isScanningCapacitor = false;
 
   const stageToHex = (flashStage: FlashStage): HexType => {
     if (flashStage === 'bluetooth') {
@@ -174,6 +178,64 @@
     }
   };
 
+  const tryCapacitorBluetoothConnection = async () => {
+    $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_CONNECTING;
+    try {
+      const success = await Microbits.assignBluetoothInput(
+        MBSpecs.Utility.patternToName($btPatternInput),
+      );
+      if (success) {
+        endFlow();
+      } else {
+        $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_TRY_AGAIN;
+      }
+    } catch (e) {
+      $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_TRY_AGAIN;
+    }
+  };
+
+  const startCapacitorDeviceScan = async () => {
+    console.log('=== STARTING CAPACITOR DEVICE SCAN ===');
+    isScanningCapacitor = true;
+    capacitorDevices = [];
+    console.log('Starting Capacitor device scan...');
+    try {
+      console.log('Calling scanCapacitorBluetoothDevices...');
+      const devices = await scanCapacitorBluetoothDevices();
+      console.log('Scan completed successfully, found devices:', devices);
+      console.log('Number of devices found:', devices.length);
+      console.log('Device details:', devices.map(d => ({ name: d.name, id: d.deviceId })));
+      capacitorDevices = devices;
+      isScanningCapacitor = false;
+      console.log('Capacitor devices set to:', capacitorDevices);
+      console.log('=== CAPACITOR DEVICE SCAN COMPLETED ===');
+    } catch (e) {
+      console.error('=== FAILED TO SCAN FOR CAPACITOR DEVICES ===');
+      console.error('Error details:', e);
+      console.error('Error type:', typeof e);
+      console.error('Error as string:', String(e));
+      console.error('Error keys:', e ? Object.keys(e) : 'no keys');
+      capacitorDevices = [];
+      isScanningCapacitor = false;
+      console.log('=== CAPACITOR DEVICE SCAN FAILED ===');
+      // Don't rethrow - let the UI handle empty device list gracefully
+    }
+  };
+
+  const onCapacitorDeviceSelect = async (device: { deviceId: string; name?: string; rssi?: number }) => {
+    $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_CONNECTING;
+    try {
+      const success = await startBluetoothConnectionWithDevice(device, $connectionDialogState.deviceState);
+      if (success) {
+        endFlow();
+      } else {
+        $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_TRY_AGAIN;
+      }
+    } catch (e) {
+      $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_TRY_AGAIN;
+    }
+  };
+
   async function onConnectingSerial(usb: MicrobitUSB): Promise<void> {
     $connectionDialogState.connectionState = ConnectDialogStates.CONNECTING_MICROBITS;
     if ($radioBridgeRemoteDeviceId === -1) {
@@ -229,12 +291,15 @@
     onClose={connectionStateNone}
     hasCloseButton={$connectionDialogState.connectionState !==
       ConnectDialogStates.USB_DOWNLOADING &&
-      $connectionDialogState.connectionState !== ConnectDialogStates.BLUETOOTH_CONNECTING}
+      $connectionDialogState.connectionState !== ConnectDialogStates.BLUETOOTH_CONNECTING &&
+      $connectionDialogState.connectionState !== ConnectDialogStates.CONNECT_TUTORIAL_CAPACITOR}
     closeOnOutsideClick={false}
     closeOnEscape={$connectionDialogState.connectionState !==
       ConnectDialogStates.USB_DOWNLOADING &&
       $connectionDialogState.connectionState !==
-        ConnectDialogStates.BLUETOOTH_CONNECTING}>
+        ConnectDialogStates.BLUETOOTH_CONNECTING &&
+      $connectionDialogState.connectionState !==
+        ConnectDialogStates.CONNECT_TUTORIAL_CAPACITOR}>
     {#if $connectionDialogState.connectionState === ConnectDialogStates.START_RADIO}
       <StartRadioDialog
         onStartBluetoothClick={bluetooth
@@ -346,9 +411,16 @@
         onBackClick={() => {
           $connectionDialogState.connectionState = ConnectDialogStates.CONNECT_BATTERY;
         }}
-        onNextClick={() => {
-          $connectionDialogState.connectionState =
-            ConnectDialogStates.CONNECT_TUTORIAL_BLUETOOTH;
+        onNextClick={async () => {
+          // Check if we're using Capacitor (iOS)
+          const { shouldUseCapacitorBluetooth } = await import('../../script/utils/platformDetection');
+          if (shouldUseCapacitorBluetooth()) {
+            // Start scanning for devices
+            await startCapacitorDeviceScan();
+            $connectionDialogState.connectionState = ConnectDialogStates.CONNECT_TUTORIAL_CAPACITOR;
+          } else {
+            $connectionDialogState.connectionState = ConnectDialogStates.CONNECT_TUTORIAL_BLUETOOTH;
+          }
         }}
         deviceState={$connectionDialogState.deviceState} />
     {:else if $connectionDialogState.connectionState === ConnectDialogStates.CONNECT_TUTORIAL_BLUETOOTH}
@@ -356,6 +428,13 @@
         onBackClick={() =>
           ($connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH)}
         onNextClick={tryMicrobitBluetoothConnection} />
+    {:else if $connectionDialogState.connectionState === ConnectDialogStates.CONNECT_TUTORIAL_CAPACITOR}
+      <SelectMicrobitDialogCapacitor
+        devices={capacitorDevices}
+        isScanning={isScanningCapacitor}
+        onBackClick={() =>
+          ($connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH)}
+        onDeviceSelect={onCapacitorDeviceSelect} />
     {:else if $connectionDialogState.connectionState === ConnectDialogStates.BLUETOOTH_CONNECTING}
       <BluetoothConnectingDialog />
     {:else if $connectionDialogState.connectionState === ConnectDialogStates.CONNECTING_MICROBITS}

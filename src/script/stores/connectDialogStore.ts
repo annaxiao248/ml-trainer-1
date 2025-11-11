@@ -28,6 +28,7 @@ export enum ConnectDialogStates {
   BLUETOOTH_TRY_AGAIN, // Prompt user to try connecting via WebBluetooth again
   MICROBIT_UNSUPPORTED, // Warn user that micro:bit V1 is not supported
   BROWSER_DIALOG, // Awaiting user interaction with browser dialog
+  CONNECT_TUTORIAL_CAPACITOR, // iOS Capacitor Bluetooth device selection dialog
 }
 
 export const connectionDialogState = writable<{

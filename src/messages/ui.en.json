@@ -184,6 +184,12 @@
   "connectMB.webPopup.webUsb.altText": "WebUSB connection dialog with BBC micro:bit entry labelled 1 and Connect button labelled 2",
   "connectMB.webPopup.webBluetooth.altText": "Web Bluetooth connection dialog with BBC micro:bit entry labelled 1 and Pair button labelled 2",
 
+  "connectMB.capacitorPopup": "Select micro:bit",
+  "connectMB.capacitorPopup.scanning": "Scanning for micro:bits...",
+  "connectMB.capacitorPopup.searching": "Searching for devices",
+  "connectMB.capacitorPopup.selectDevice": "Select your micro:bit from the list below:",
+  "connectMB.capacitorPopup.noDevices": "No micro:bit devices found. Make sure your micro:bit is powered on and nearby.",
+
   "connectMB.usbDownloadingMB1.header": "Downloading program to micro:bit 1",
   "connectMB.usbDownloadingMB2.header": "Downloading program to micro:bit 2",
   "connectMB.usbDownloading.header": "Downloading program to micro:bit",

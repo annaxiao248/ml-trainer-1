@@ -162,7 +162,10 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
 
       // Connect to the device
       logMessage('Connecting to device via Capacitor Bluetooth');
-      await this.bluetoothPlugin.connect({ deviceId: this.deviceId });
+      await this.bluetoothPlugin.connect({
+        deviceId: this.deviceId,
+        timeout: 5000 // 5 second timeout for connection (shorter)
+      });
 
       this.isConnected = true;
       logMessage('Device connected via Capacitor Bluetooth');
