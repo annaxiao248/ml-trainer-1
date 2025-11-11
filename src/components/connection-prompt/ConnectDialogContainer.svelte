@@ -415,9 +415,10 @@
           // Check if we're using Capacitor (iOS)
           const { shouldUseCapacitorBluetooth } = await import('../../script/utils/platformDetection');
           if (shouldUseCapacitorBluetooth()) {
-            // Start scanning for devices
-            await startCapacitorDeviceScan();
+            // Go directly to device selection dialog and start scanning in background
             $connectionDialogState.connectionState = ConnectDialogStates.CONNECT_TUTORIAL_CAPACITOR;
+            // Start scanning asynchronously
+            startCapacitorDeviceScan();
           } else {
             $connectionDialogState.connectionState = ConnectDialogStates.CONNECT_TUTORIAL_BLUETOOTH;
           }

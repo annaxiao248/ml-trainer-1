@@ -318,8 +318,8 @@ export async function scanCapacitorBluetoothDevices(): Promise<Array<{ deviceId:
       }
     };
 
-    // Set timeout to stop scanning - use much shorter duration since device is detected quickly
-    scanTimeoutId = setTimeout(stopScanAndResolve, 1000); // 1 second
+    // Set timeout to stop scanning - use longer duration to allow more time for device discovery
+    scanTimeoutId = setTimeout(stopScanAndResolve, 3000); // 3 seconds
   });
 
   return await scanPromise;
