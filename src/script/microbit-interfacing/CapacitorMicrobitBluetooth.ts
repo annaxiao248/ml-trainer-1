@@ -114,8 +114,26 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
     try {
       this.bluetoothPlugin = getBluetoothPlugin();
     } catch (e) {
-      logError('Failed to initialize Bluetooth plugin', e);
+      logError('Failed to get Bluetooth plugin', e);
       throw e;
+    }
+  }
+
+  /**
+   * Initialize the Bluetooth LE plugin if not already initialized
+   */
+  private async ensureInitialized(): Promise<void> {
+    try {
+      await this.bluetoothPlugin.initialize();
+      logMessage('Bluetooth LE plugin initialized');
+    } catch (e: any) {
+      // If already initialized, that's fine
+      if (e.message && e.message.includes('already initialized')) {
+        logMessage('Bluetooth LE plugin already initialized');
+      } else {
+        logError('Failed to initialize Bluetooth LE plugin', e);
+        throw e;
+      }
     }
   }
 
@@ -138,6 +156,9 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
       if (!this.deviceId) {
         throw new Error('Device ID is not available');
       }
+
+      // Ensure Bluetooth LE is initialized
+      await this.ensureInitialized();
 
       // Connect to the device
       logMessage('Connecting to device via Capacitor Bluetooth');

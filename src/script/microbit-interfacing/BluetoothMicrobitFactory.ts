@@ -79,11 +79,28 @@ async function requestCapacitorBluetoothDevice(name: string): Promise<any | unde
       throw new Error('Bluetooth LE plugin not available. Please install @capacitor-community/bluetooth-le');
     }
 
+    // Initialize the Bluetooth LE plugin first
+    logMessage('Initializing Bluetooth LE plugin...');
+    try {
+      await bluetoothPlugin.initialize();
+      logMessage('Bluetooth LE plugin initialized');
+    } catch (e: any) {
+      // If already initialized, that's fine
+      if (e.message && e.message.includes('already initialized')) {
+        logMessage('Bluetooth LE plugin already initialized');
+      } else {
+        logError('Failed to initialize Bluetooth LE plugin', e);
+        // Try to continue anyway - might already be initialized
+      }
+    }
+
     // Request permissions
+    logMessage('Requesting Bluetooth scan permissions...');
     const permissionResult = await bluetoothPlugin.requestLEScan();
     if (!permissionResult) {
       throw new Error('Bluetooth scan permission denied');
     }
+    logMessage('Bluetooth scan permissions granted');
 
     // Start scanning
     logMessage('Starting Bluetooth scan for micro:bit...');
@@ -94,7 +111,9 @@ async function requestCapacitorBluetoothDevice(name: string): Promise<any | unde
 
     // Wait for device to be found
     const deviceName = `BBC micro:bit [${name}]`;
+    const namePrefix = `BBC micro:bit [${name}]`;
     let foundDevice: any = null;
+    const foundDevices: any[] = [];
 
     const scanTimeout = new Promise<'timeout'>(resolve =>
       setTimeout(() => resolve('timeout'), StaticConfiguration.requestDeviceTimeoutDuration)
@@ -102,19 +121,43 @@ async function requestCapacitorBluetoothDevice(name: string): Promise<any | unde
 
     const deviceFound = new Promise<any>((resolve) => {
       const listener = bluetoothPlugin.addListener('onScanResult', (result: any) => {
-        if (result.name === deviceName || result.name?.startsWith(`BBC micro:bit [${name}]`)) {
-          bluetoothPlugin.removeAllListeners();
-          bluetoothPlugin.stopLEScan();
-          resolve(result);
+        logMessage('Scan result received:', result);
+        
+        // Check if this is a micro:bit device matching our name
+        if (result.name && (
+          result.name === deviceName || 
+          result.name.startsWith(namePrefix) ||
+          result.name.startsWith('BBC micro:bit [')
+        )) {
+          logMessage('Found matching micro:bit device:', result.name);
+          foundDevices.push(result);
+          
+          // If we found an exact match, use it immediately
+          if (result.name === deviceName) {
+            logMessage('Found exact match, stopping scan');
+            bluetoothPlugin.removeAllListeners();
+            bluetoothPlugin.stopLEScan();
+            resolve(result);
+            return;
+          }
         }
       });
 
       // Cleanup on timeout
       scanTimeout.then((result) => {
         if (result === 'timeout') {
+          logMessage('Scan timeout reached');
           bluetoothPlugin.removeAllListeners();
           bluetoothPlugin.stopLEScan();
-          resolve(null);
+          
+          // If we found any matching devices, use the first one
+          if (foundDevices.length > 0) {
+            logMessage(`Found ${foundDevices.length} matching device(s), using first one`);
+            resolve(foundDevices[0]);
+          } else {
+            logError('No matching devices found during scan');
+            resolve(null);
+          }
         }
       });
     });
@@ -126,6 +169,7 @@ async function requestCapacitorBluetoothDevice(name: string): Promise<any | unde
       return undefined;
     }
 
+    logMessage('Selected device:', foundDevice);
     return foundDevice;
   } catch (e) {
     logError('Capacitor Bluetooth request device failed', e);
