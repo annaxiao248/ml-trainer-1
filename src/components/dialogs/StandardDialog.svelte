@@ -22,6 +22,7 @@
 
   let finalFocusRef: Element | null;
   let isMobile = false; // To detect if the device is mobile
+  let isTablet = false; // To detect if the device is tablet
 
   const onOpenDialog = () => {
     finalFocusRef = document.activeElement;
@@ -84,19 +85,24 @@
 
   onDestroy(() => document.removeEventListener('keydown', keyListener));
 
-  // Detect mobile screen size
-  const checkIfMobile = () => {
-    isMobile = window.innerWidth <= 768;
+  // Detect screen size: mobile <= 768px, tablet 769-1024px, desktop > 1024px
+  const checkScreenSize = () => {
+    const width = window.innerWidth;
+    isMobile = width <= 768;
+    isTablet = width > 768 && width <= 1024;
   };
 
   // Run check on mount and listen for window resize events
   onMount(() => {
-    checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
     return () => {
-      window.removeEventListener('resize', checkIfMobile);
+      window.removeEventListener('resize', checkScreenSize);
     };
   });
+
+  // Calculate dialog width based on screen size
+  $: dialogWidth = isMobile ? '90%' : isTablet ? '85%' : '750px';
 </script>
 
 <div class="fixed z-10" use:melt={$portalled}>
@@ -109,7 +115,7 @@
       <div
         use:melt={$content}
         class="border-gray-200 border border-solid relative bg-white rounded-lg p-8 z-15"
-        style="width: {isMobile ? '90%' : '500px'}; height: {isMobile ? 'auto' : 'auto'};"
+        style="width: {dialogWidth}; max-width: 90vw; height: auto;"
         class:hidden={hideContent}
         transition:scale={{
           duration: 200,
@@ -117,8 +123,8 @@
           easing: quintOut,
         }}>
         
-        <!-- Added horizontal scroll for content overflow -->
-        <div class="overflow-x-auto">
+        <!-- Content wrapper - no horizontal scroll needed with wider dialog -->
+        <div>
           {#if hasCloseButton}
             <div class="absolute right-2 top-2">
               <IconButton
