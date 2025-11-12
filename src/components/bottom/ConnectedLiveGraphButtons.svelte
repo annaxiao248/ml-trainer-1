@@ -18,12 +18,12 @@
   import { DeviceRequestStates } from '../../script/microbit-interfacing/MicrobitConnection';
   import { reconnect } from '../../script/utils/reconnect';
 
-  const handleInputDisconnectClick = () => {
-    Microbits.disconnect(DeviceRequestStates.INPUT);
+  const handleInputDisconnectClick = async () => {
+    await Microbits.disconnect(DeviceRequestStates.INPUT);
   };
 
-  const handleOutputDisconnectClick = () => {
-    Microbits.disconnect(DeviceRequestStates.OUTPUT);
+  const handleOutputDisconnectClick = async () => {
+    await Microbits.disconnect(DeviceRequestStates.OUTPUT);
   };
 
   const handleInputConnect = async () => {

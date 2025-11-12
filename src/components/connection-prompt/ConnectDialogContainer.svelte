@@ -26,6 +26,7 @@
   } from '../../script/stores/connectionStore';
   import { compatibility, state } from '../../script/stores/uiStore';
   import { scanCapacitorBluetoothDevices, startBluetoothConnectionWithDevice } from '../../script/microbit-interfacing/BluetoothMicrobitFactory';
+  import { DeviceRequestStates } from '../../script/microbit-interfacing/MicrobitConnection';
   import StandardDialog from '../dialogs/StandardDialog.svelte';
   import WebBluetoothTryAgain from './WebBluetoothTryAgain.svelte';
   import WebUsbTryAgain, { USBTryAgainType } from './WebUsbTryAgain.svelte';
@@ -211,9 +212,14 @@
   const onCapacitorDeviceSelect = async (device: { deviceId: string; name?: string; rssi?: number }) => {
     $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_CONNECTING;
     try {
-      const success = await startBluetoothConnectionWithDevice(device, $connectionDialogState.deviceState);
+      const microbit = await startBluetoothConnectionWithDevice(device, $connectionDialogState.deviceState);
 
-      if (success) {
+      if (microbit) {
+        // Assign the microbit instance to Microbits so disconnect can find it
+        const deviceState = $connectionDialogState.deviceState;
+        if (deviceState === DeviceRequestStates.INPUT || deviceState === DeviceRequestStates.OUTPUT) {
+          Microbits.assignMicrobit(microbit, deviceState);
+        }
         endFlow();
       } else {
         $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_TRY_AGAIN;

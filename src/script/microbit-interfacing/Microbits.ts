@@ -133,6 +133,20 @@ class Microbits {
       this.outputMicrobit = undefined;
     }
   }
+
+  /**
+   * Assign a microbit instance directly (used for Capacitor device selection flow)
+   */
+  public static assignMicrobit(
+    microbit: MicrobitConnection | MicrobitBluetoothConnection,
+    requestState: DeviceRequestStates.INPUT | DeviceRequestStates.OUTPUT,
+  ): void {
+    if (requestState === DeviceRequestStates.INPUT) {
+      this.inputMicrobit = microbit;
+    } else {
+      this.outputMicrobit = microbit as MicrobitBluetoothConnection;
+    }
+  }
 }
 
 export default Microbits;

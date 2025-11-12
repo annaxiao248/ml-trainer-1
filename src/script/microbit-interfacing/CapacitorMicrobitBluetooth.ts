@@ -369,43 +369,70 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
   ): Promise<void> {
     this.duringExplicitConnectDisconnect++;
     
-    try {
-      if (this.deviceId && this.isConnected) {
-        await this.bluetoothPlugin.disconnect({ deviceId: this.deviceId });
-        this.isConnected = false;
-      }
-    } catch (e) {
-      logError('Bluetooth disconnect error (Capacitor, ignored)', e);
-    } finally {
-      this.duringExplicitConnectDisconnect--;
-    }
-
-    // Clean up notification listeners
-    if (this.notificationListeners) {
+    // Store states and connection status before any cleanup
+    const statesToDisconnect = Array.from(this.inUseAs);
+    const wasConnected = this.isConnected;
+    
+    // Stop notifications first
+    if (this.notificationListeners && this.deviceId) {
       for (const [key, listener] of this.notificationListeners.entries()) {
         try {
+          // Extract service and characteristic from the event key: notification|deviceId|service|characteristic
+          const parts = key.split('|');
+          if (parts.length === 4) {
+            const [, , service, characteristic] = parts;
+            await this.bluetoothPlugin.stopNotifications({
+              deviceId: this.deviceId,
+              service: service,
+              characteristic: characteristic
+            });
+          }
           await listener.remove();
         } catch (e) {
-          // Ignore listener removal errors
+          // Ignore errors during cleanup
         }
       }
       this.notificationListeners.clear();
     }
     
+    try {
+      if (this.deviceId && wasConnected) {
+        await this.bluetoothPlugin.disconnect({ deviceId: this.deviceId });
+        this.isConnected = false;
+      }
+    } catch (e) {
+      logError('Bluetooth disconnect error (Capacitor)', e);
+    } finally {
+      this.duringExplicitConnectDisconnect--;
+    }
+    
+    // Clear inUseAs after storing states
+    this.inUseAs.clear();
+    
     this.reconnectReadyPromise = new Promise(resolve => setTimeout(resolve, 3_500));
     
     if (updateState) {
-      this.inUseAs.forEach(value =>
+      if (statesToDisconnect.length > 0) {
+        statesToDisconnect.forEach(value =>
+          stateOnDisconnected(
+            value,
+            userTriggered || this.finalAttempt
+              ? false
+              : this.isReconnect
+                ? 'autoReconnect'
+                : 'connect',
+            'bluetooth',
+          ),
+        );
+      } else if (wasConnected) {
+        // If inUseAs was empty but we were connected, disconnect INPUT as fallback
+        // This can happen if the state tracking got out of sync
         stateOnDisconnected(
-          value,
-          userTriggered || this.finalAttempt
-            ? false
-            : this.isReconnect
-              ? 'autoReconnect'
-              : 'connect',
+          DeviceRequestStates.INPUT,
+          userTriggered ? false : 'connect',
           'bluetooth',
-        ),
-      );
+        );
+      }
     }
   }
 
