@@ -138,8 +138,8 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
   private isReconnect = false;
   private reconnectReadyPromise: Promise<void> | undefined;
   private finalAttempt = false;
-  private notificationCallbacks: Map<string, (value: DataView) => void> = new Map();
   private isConnected = false;
+  private notificationListeners: Map<string, any> = new Map(); // Store listeners for cleanup
 
   private outputWriteQueue: {
     busy: boolean;
@@ -403,11 +403,16 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
 
       states.forEach(stateOnConnected);
       
+      logMessage('Setting up services for states:', states);
       if (states.includes(DeviceRequestStates.INPUT)) {
+        logMessage('Setting up INPUT services (accelerometer, buttons, UART)...');
         await this.listenToInputServices();
+        logMessage('INPUT services setup complete');
       }
       if (states.includes(DeviceRequestStates.OUTPUT)) {
+        logMessage('Setting up OUTPUT services...');
         await this.listenToOutputServices();
+        logMessage('OUTPUT services setup complete');
       }
       
       states.forEach(s => this.inUseAs.add(s));
@@ -459,7 +464,19 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
       this.duringExplicitConnectDisconnect--;
     }
 
-    this.notificationCallbacks.clear();
+    // Clean up notification listeners
+    if (this.notificationListeners) {
+      for (const [key, listener] of this.notificationListeners.entries()) {
+        try {
+          await listener.remove();
+          logMessage(`Removed notification listener: ${key}`);
+        } catch (e) {
+          logError(`Failed to remove notification listener ${key}`, e);
+        }
+      }
+      this.notificationListeners.clear();
+    }
+    
     this.reconnectReadyPromise = new Promise(resolve => setTimeout(resolve, 3_500));
     
     if (updateState) {
@@ -487,31 +504,49 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
   }
 
   private async listenToInputServices(): Promise<void> {
-    await this.listenToAccelerometer();
-    await this.listenToButton('A');
-    await this.listenToButton('B');
-    await this.listenToUART(DeviceRequestStates.INPUT);
+    logMessage('listenToInputServices() called - setting up accelerometer, buttons, and UART');
+    try {
+      await this.listenToAccelerometer();
+      logMessage('Accelerometer listener set up');
+    } catch (e) {
+      logError('Failed to set up accelerometer listener', e);
+      throw e;
+    }
+    try {
+      await this.listenToButton('A');
+      logMessage('Button A listener set up');
+    } catch (e) {
+      logError('Failed to set up button A listener', e);
+    }
+    try {
+      await this.listenToButton('B');
+      logMessage('Button B listener set up');
+    } catch (e) {
+      logError('Failed to set up button B listener', e);
+    }
+    try {
+      await this.listenToUART(DeviceRequestStates.INPUT);
+      logMessage('UART listener set up');
+    } catch (e) {
+      logError('Failed to set up UART listener', e);
+    }
   }
 
   private async listenToButton(buttonToListenFor: MBSpecs.Button): Promise<void> {
     if (!this.deviceId) throw new Error('Device not connected');
 
+    const service = MBSpecs.Services.BUTTON_SERVICE;
     const characteristicUuid =
       buttonToListenFor === 'A'
         ? MBSpecs.Characteristics.BUTTON_A
         : MBSpecs.Characteristics.BUTTON_B;
-
-    // Start notifications
-    await this.bluetoothPlugin.startNotifications({
-      deviceId: this.deviceId,
-      service: MBSpecs.Services.BUTTON_SERVICE,
-      characteristic: characteristicUuid,
-    });
-
-    // Set up callback for notifications
-    const callbackKey = `${MBSpecs.Services.BUTTON_SERVICE}-${characteristicUuid}`;
-    this.notificationCallbacks.set(callbackKey, (value: DataView) => {
-      const stateId = value.getUint8(0);
+    
+    const eventKey = `notification|${this.deviceId}|${service}|${characteristicUuid}`;
+    
+    // Set up listener
+    const listener = await this.bluetoothPlugin.addListener(eventKey, (event: any) => {
+      const dataView = this.valueToDataView(event?.value);
+      const stateId = dataView.getUint8(0);
       let state = MBSpecs.ButtonStates.Released;
       if (stateId === 1) {
         state = MBSpecs.ButtonStates.Pressed;
@@ -521,92 +556,134 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
       }
       onButtonChange(state, buttonToListenFor);
     });
-
-    // Listen for characteristic value changes
-    this.bluetoothPlugin.addListener('onCharacteristicChanged', (result: any) => {
-      if (result.characteristic === characteristicUuid && result.deviceId === this.deviceId) {
-        const callback = this.notificationCallbacks.get(callbackKey);
-        if (callback && result.value) {
-          const dataView = new DataView(
-            new Uint8Array(result.value).buffer
-          );
-          callback(dataView);
-        }
-      }
+    
+    // Store listener for cleanup
+    if (!this.notificationListeners) {
+      this.notificationListeners = new Map();
+    }
+    this.notificationListeners.set(eventKey, listener);
+    
+    // Start notifications with object format
+    await this.bluetoothPlugin.startNotifications({
+      deviceId: this.deviceId,
+      service: service,
+      characteristic: characteristicUuid
     });
   }
 
-  private async listenToAccelerometer(): Promise<void> {
-    if (!this.deviceId) throw new Error('Device not connected');
+  /**
+   * Helper to convert value to DataView
+   * The plugin may return values in different formats
+   */
+  private valueToDataView(value: any): DataView {
+    let bytes: Uint8Array;
+    if (typeof value === 'string') {
+      // Value is a hex string (e.g., "001234567890")
+      bytes = new Uint8Array(value.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []);
+    } else if (Array.isArray(value)) {
+      // Value is an array of numbers
+      bytes = new Uint8Array(value);
+    } else if (value instanceof DataView) {
+      // Already a DataView
+      return value;
+    } else {
+      // Value is already a Uint8Array or ArrayBuffer
+      bytes = value instanceof Uint8Array ? value : new Uint8Array(value);
+    }
+    return new DataView(bytes.buffer);
+  }
 
-    // Start notifications
-    await this.bluetoothPlugin.startNotifications({
+  private async listenToAccelerometer(): Promise<void> {
+    if (!this.deviceId) {
+      throw new Error('Device not connected - deviceId is not available');
+    }
+
+    logMessage('Setting up accelerometer notifications...', {
       deviceId: this.deviceId,
       service: MBSpecs.Services.ACCEL_SERVICE,
-      characteristic: MBSpecs.Characteristics.ACCEL_DATA,
+      characteristic: MBSpecs.Characteristics.ACCEL_DATA
     });
-
-    // Set up callback for notifications
-    const callbackKey = `${MBSpecs.Services.ACCEL_SERVICE}-${MBSpecs.Characteristics.ACCEL_DATA}`;
-    this.notificationCallbacks.set(callbackKey, (value: DataView) => {
-      const x = value.getInt16(0, true);
-      const y = value.getInt16(2, true);
-      const z = value.getInt16(4, true);
-      onAccelerometerChange(x, y, z);
-    });
-
-    // Listen for characteristic value changes
-    this.bluetoothPlugin.addListener('onCharacteristicChanged', (result: any) => {
-      if (
-        result.characteristic === MBSpecs.Characteristics.ACCEL_DATA &&
-        result.deviceId === this.deviceId
-      ) {
-        const callback = this.notificationCallbacks.get(callbackKey);
-        if (callback && result.value) {
-          const dataView = new DataView(
-            new Uint8Array(result.value).buffer
-          );
-          callback(dataView);
-        }
+    
+    // The raw plugin API requires:
+    // 1. Setting up a listener with the event key: notification|deviceId|service|characteristic
+    // 2. Calling startNotifications with an object: {deviceId, service, characteristic}
+    try {
+      const service = MBSpecs.Services.ACCEL_SERVICE;
+      const characteristic = MBSpecs.Characteristics.ACCEL_DATA;
+      const eventKey = `notification|${this.deviceId}|${service}|${characteristic}`;
+      
+      // Set up listener for notifications
+      const listener = await this.bluetoothPlugin.addListener(eventKey, (event: any) => {
+        // Convert value to DataView (plugin may return different formats)
+        const value = event?.value;
+        const dataView = this.valueToDataView(value);
+        
+        // Parse accelerometer data (x, y, z as Int16 little-endian)
+        const x = dataView.getInt16(0, true);
+        const y = dataView.getInt16(2, true);
+        const z = dataView.getInt16(4, true);
+        
+        logMessage('Accelerometer data received:', { 
+          x, 
+          y, 
+          z,
+          valueType: typeof value,
+          dataViewLength: dataView.byteLength
+        });
+        
+        // Call the change handler
+        onAccelerometerChange(x, y, z);
+      });
+      
+      // Store listener for cleanup
+      if (!this.notificationListeners) {
+        this.notificationListeners = new Map();
       }
-    });
+      this.notificationListeners.set(eventKey, listener);
+      
+      // Start notifications with object format
+      await this.bluetoothPlugin.startNotifications({
+        deviceId: this.deviceId,
+        service: service,
+        characteristic: characteristic
+      });
+      
+      logMessage('Accelerometer notifications started successfully');
+    } catch (e) {
+      logError('Failed to start accelerometer notifications', e);
+      throw e;
+    }
   }
 
   private async listenToUART(state: DeviceRequestStates): Promise<void> {
     if (!this.deviceId) throw new Error('Device not connected');
 
-    // Start notifications
-    await this.bluetoothPlugin.startNotifications({
-      deviceId: this.deviceId,
-      service: MBSpecs.Services.UART_SERVICE,
-      characteristic: MBSpecs.Characteristics.UART_DATA_TX,
-    });
-
-    // Set up callback for notifications
-    const callbackKey = `${MBSpecs.Services.UART_SERVICE}-${MBSpecs.Characteristics.UART_DATA_TX}`;
-    this.notificationCallbacks.set(callbackKey, (value: DataView) => {
+    const service = MBSpecs.Services.UART_SERVICE;
+    const characteristic = MBSpecs.Characteristics.UART_DATA_TX;
+    const eventKey = `notification|${this.deviceId}|${service}|${characteristic}`;
+    
+    // Set up listener
+    const listener = await this.bluetoothPlugin.addListener(eventKey, (event: any) => {
+      const dataView = this.valueToDataView(event?.value);
       const receivedData: number[] = [];
-      for (let i = 0; i < value.byteLength; i += 1) {
-        receivedData[i] = value.getUint8(i);
+      for (let i = 0; i < dataView.byteLength; i += 1) {
+        receivedData[i] = dataView.getUint8(i);
       }
       const receivedString = String.fromCharCode.apply(null, receivedData);
       onUARTDataReceived(state, receivedString);
     });
-
-    // Listen for characteristic value changes
-    this.bluetoothPlugin.addListener('onCharacteristicChanged', (result: any) => {
-      if (
-        result.characteristic === MBSpecs.Characteristics.UART_DATA_TX &&
-        result.deviceId === this.deviceId
-      ) {
-        const callback = this.notificationCallbacks.get(callbackKey);
-        if (callback && result.value) {
-          const dataView = new DataView(
-            new Uint8Array(result.value).buffer
-          );
-          callback(dataView);
-        }
-      }
+    
+    // Store listener for cleanup
+    if (!this.notificationListeners) {
+      this.notificationListeners = new Map();
+    }
+    this.notificationListeners.set(eventKey, listener);
+    
+    // Start notifications with object format
+    await this.bluetoothPlugin.startNotifications({
+      deviceId: this.deviceId,
+      service: service,
+      characteristic: characteristic
     });
   }
 
