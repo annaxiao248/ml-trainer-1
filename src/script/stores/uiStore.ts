@@ -59,7 +59,6 @@ if (typeof window !== 'undefined') {
   // Re-check when Capacitor becomes available
   const checkCapacitor = () => {
     if (typeof (window as any).Capacitor !== 'undefined') {
-      console.log('✅ Capacitor detected, rechecking compatibility');
       recheckCompatibility();
     } else if (recheckCount < maxRechecks) {
       setTimeout(checkCapacitor, 50);
@@ -72,7 +71,6 @@ if (typeof window !== 'undefined') {
   const checkUrlChange = () => {
     const currentUrl = document.URL;
     if (currentUrl !== lastUrl) {
-      console.log('📍 URL changed, rechecking compatibility:', currentUrl);
       lastUrl = currentUrl;
       recheckCompatibility();
     }

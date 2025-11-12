@@ -195,54 +195,30 @@
   };
 
   const startCapacitorDeviceScan = async () => {
-    console.log('=== STARTING CAPACITOR DEVICE SCAN ===');
     isScanningCapacitor = true;
     capacitorDevices = [];
-    console.log('Starting Capacitor device scan...');
     try {
-      console.log('Calling scanCapacitorBluetoothDevices...');
       const devices = await scanCapacitorBluetoothDevices();
-      console.log('Scan completed successfully, found devices:', devices);
-      console.log('Number of devices found:', devices.length);
-      console.log('Device details:', devices.map(d => ({ name: d.name, id: d.deviceId })));
       capacitorDevices = devices;
       isScanningCapacitor = false;
-      console.log('Capacitor devices set to:', capacitorDevices);
-      console.log('=== CAPACITOR DEVICE SCAN COMPLETED ===');
     } catch (e) {
-      console.error('=== FAILED TO SCAN FOR CAPACITOR DEVICES ===');
-      console.error('Error details:', e);
-      console.error('Error type:', typeof e);
-      console.error('Error as string:', String(e));
-      console.error('Error keys:', e ? Object.keys(e) : 'no keys');
       capacitorDevices = [];
       isScanningCapacitor = false;
-      console.log('=== CAPACITOR DEVICE SCAN FAILED ===');
       // Don't rethrow - let the UI handle empty device list gracefully
     }
   };
 
   const onCapacitorDeviceSelect = async (device: { deviceId: string; name?: string; rssi?: number }) => {
-    console.log('=== CAPACITOR DEVICE SELECTED ===');
-    console.log('Selected device:', device);
-    console.log('Device state:', $connectionDialogState.deviceState);
-
     $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_CONNECTING;
     try {
-      console.log('Calling startBluetoothConnectionWithDevice...');
       const success = await startBluetoothConnectionWithDevice(device, $connectionDialogState.deviceState);
-      console.log('Connection result:', success);
 
       if (success) {
-        console.log('Connection successful, ending flow');
         endFlow();
       } else {
-        console.log('Connection failed, showing try again dialog');
         $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_TRY_AGAIN;
       }
     } catch (e) {
-      console.error('Exception during device connection:', e);
-      console.error('Exception details:', { message: (e as any)?.message || String(e), type: typeof e, keys: e ? Object.keys(e) : [] });
       $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_TRY_AGAIN;
     }
   };
@@ -438,7 +414,6 @@
     {:else if $connectionDialogState.connectionState === ConnectDialogStates.CONNECT_TUTORIAL_BLUETOOTH}
       <SelectMicrobitDialogBluetooth
         onBackClick={() => {
-          console.log('=== CAPACITOR BACK BUTTON CLICKED ===');
           ($connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH);
         }}
         onNextClick={tryMicrobitBluetoothConnection} />

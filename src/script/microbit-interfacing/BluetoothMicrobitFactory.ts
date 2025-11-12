@@ -83,22 +83,18 @@ async function requestCapacitorBluetoothDevice(name: string): Promise<any | unde
     try {
       const { initializeBluetoothLEOnce } = await import('./CapacitorMicrobitBluetooth');
       await initializeBluetoothLEOnce();
-      logMessage('Bluetooth LE plugin ready');
     } catch (e: any) {
       logError('Failed to ensure Bluetooth LE plugin is initialized', e);
       // Try to continue anyway - might already be initialized
     }
 
     // Request permissions
-    logMessage('Requesting Bluetooth scan permissions...');
     const permissionResult = await bluetoothPlugin.requestLEScan();
     if (!permissionResult) {
       throw new Error('Bluetooth scan permission denied');
     }
-    logMessage('Bluetooth scan permissions granted');
 
     // Start scanning
-    logMessage('Starting Bluetooth scan for micro:bit...');
     await bluetoothPlugin.startLEScan({
       services: [],
       allowDuplicates: false,
@@ -116,20 +112,16 @@ async function requestCapacitorBluetoothDevice(name: string): Promise<any | unde
 
     const deviceFound = new Promise<any>((resolve) => {
       const listener = bluetoothPlugin.addListener('onScanResult', (result: any) => {
-        logMessage('Scan result received:', result);
-
         // Check if this is a micro:bit device matching our name
         if (result.name && (
           result.name === deviceName ||
           result.name.startsWith(namePrefix) ||
           result.name.startsWith('BBC micro:bit [')
         )) {
-          logMessage('Found matching micro:bit device:', result.name);
           foundDevices.push(result);
 
           // If we found an exact match, use it immediately
           if (result.name === deviceName) {
-            logMessage('Found exact match, stopping scan');
             bluetoothPlugin.removeAllListeners();
             bluetoothPlugin.stopLEScan();
             resolve(result);
@@ -141,13 +133,11 @@ async function requestCapacitorBluetoothDevice(name: string): Promise<any | unde
       // Cleanup on timeout
       scanTimeout.then((result) => {
         if (result === 'timeout') {
-          logMessage('Scan timeout reached');
           bluetoothPlugin.removeAllListeners();
           bluetoothPlugin.stopLEScan();
 
           // If we found any matching devices, use the first one
           if (foundDevices.length > 0) {
-            logMessage(`Found ${foundDevices.length} matching device(s), using first one`);
             resolve(foundDevices[0]);
           } else {
             logError('No matching devices found during scan', null);
@@ -163,8 +153,6 @@ async function requestCapacitorBluetoothDevice(name: string): Promise<any | unde
       logError('Device not found during scan', null);
       return undefined;
     }
-
-    logMessage('Selected device:', foundDevice);
     return foundDevice;
   } catch (e) {
     logError('Capacitor Bluetooth request device failed', e);
@@ -196,35 +184,30 @@ export async function scanCapacitorBluetoothDevices(): Promise<Array<{ deviceId:
   try {
     const { initializeBluetoothLEOnce } = await import('./CapacitorMicrobitBluetooth');
     await initializeBluetoothLEOnce();
-    logMessage('Bluetooth LE plugin ready for scanning');
+    // logMessage('Bluetooth LE plugin ready for scanning');
   } catch (e: any) {
     logError('Failed to ensure Bluetooth LE plugin is initialized', e);
     // Try to continue anyway - might already be initialized
   }
 
   // The requestLEScan method appears to handle both permissions and scanning
-  logMessage('Requesting Bluetooth scan permissions and starting scan...');
+  // logMessage('Requesting Bluetooth scan permissions and starting scan...');
   try {
     const permissionResult = await bluetoothPlugin.requestLEScan();
-    logMessage('requestLEScan completed successfully');
+    // logMessage('requestLEScan completed successfully');
     // If we get here, scanning should be active
   } catch (permissionError) {
-    logMessage('requestLEScan failed, trying alternative approach:', permissionError);
     // The plugin may not have requestLEScan, try direct scanning
     try {
       if (bluetoothPlugin.startScanning) {
-        logMessage('Trying startScanning directly...');
         await bluetoothPlugin.startScanning({
           services: [],
           allowDuplicates: false,
         });
-        logMessage('startScanning succeeded');
       } else {
-        logMessage('No scanning method available');
         throw permissionError;
       }
     } catch (scanError) {
-      logMessage('All scanning methods failed');
       throw permissionError;
     }
   }
@@ -234,18 +217,15 @@ export async function scanCapacitorBluetoothDevices(): Promise<Array<{ deviceId:
 
   // Scan for a fixed duration
   const scanDuration = 10000; // 10 seconds
-  logMessage('Creating scan promise with duration:', scanDuration, 'ms');
   const scanPromise = new Promise<Array<{ deviceId: string; name?: string; rssi?: number }>>((resolve, reject) => {
-    logMessage('Scan promise created, setting up timeout');
-    logMessage('Setting up scan result listener...');
+    // logMessage('Scan promise created, setting up timeout');
+    // logMessage('Setting up scan result listener...');
     const listener = bluetoothPlugin.addListener('onScanResult', (result: any) => {
       try {
         // Extract device info from the result
         const deviceName = result.device?.name || result.localName || result.name;
         const deviceId = result.device?.deviceId || result.deviceId || result.id;
         const rssi = result.rssi;
-
-        logMessage('Processing scan result - Name:', deviceName, 'ID:', deviceId, 'RSSI:', rssi);
 
         // Check if this is a micro:bit device
         if (deviceName && deviceName.startsWith('BBC micro:bit')) {
@@ -256,26 +236,17 @@ export async function scanCapacitorBluetoothDevices(): Promise<Array<{ deviceId:
               name: deviceName,
               rssi: rssi,
             });
-            logMessage('Found micro:bit device:', deviceName, 'RSSI:', rssi, 'ID:', deviceId);
-          } else if (deviceId && uniqueDevices.has(deviceId)) {
-            logMessage('Micro:bit device already found:', deviceName, 'ID:', deviceId);
           }
-        } else {
-          logMessage('Non-micro:bit device:', deviceName || 'Unknown');
         }
       } catch (error) {
         logError('Error processing scan result', error);
       }
     });
-    logMessage('Scan result listener set up successfully');
 
     // Stop scanning after duration
     let scanTimeoutId: any;
     const stopScanAndResolve = async () => {
       try {
-        logMessage('Timer expired or scan stopping, found devices so far:', foundDevices.length);
-        logMessage('Found micro:bit devices:', foundDevices.map(d => ({ name: d.name, rssi: d.rssi })));
-
         // Remove the timeout to prevent multiple calls
         if (scanTimeoutId) {
           clearTimeout(scanTimeoutId);
@@ -287,23 +258,16 @@ export async function scanCapacitorBluetoothDevices(): Promise<Array<{ deviceId:
         try {
           if (bluetoothPlugin.stopLEScan) {
             await bluetoothPlugin.stopLEScan();
-            logMessage('stopLEScan succeeded');
           } else if (bluetoothPlugin.stopScanning) {
             await bluetoothPlugin.stopScanning();
-            logMessage('stopScanning succeeded');
-          } else {
-            logMessage('No stop scan method available');
           }
         } catch (stopScanError) {
-          logMessage('Error stopping scan (non-critical):', stopScanError);
+          // Ignore stop scan errors
         }
 
-        logMessage('Scan stopped successfully, resolving with devices');
         resolve(foundDevices);
       } catch (stopError) {
         logError('Error in stop scan process', stopError);
-        // Still resolve with found devices even if stopping fails
-        logMessage('Resolving with devices despite stop error:', foundDevices.length);
         resolve(foundDevices);
       }
     };
@@ -324,8 +288,6 @@ export async function startBluetoothConnection(
   requestState: DeviceRequestStates,
 ): Promise<MicrobitBluetoothConnection | undefined> {
   const useCapacitor = shouldUseCapacitorBluetooth();
-
-  logMessage(`Starting Bluetooth connection using ${useCapacitor ? 'Capacitor' : 'Web Bluetooth'}`);
 
   try {
     if (useCapacitor) {
@@ -393,7 +355,6 @@ export async function startBluetoothConnectionWithDevice(
       }
     }
 
-    logMessage(`Starting Bluetooth connection with selected device: ${device.name || 'Unknown'} (${deviceId})`);
 
     // Create device object in the format expected by CapacitorMicrobitBluetooth
     const capacitorDevice = {
@@ -411,16 +372,11 @@ export async function startBluetoothConnectionWithDevice(
     // Wait a short moment after scanning stops before attempting connection
     // But keep it short - iOS doesn't cache advertisement data, so we need to connect quickly
     // while the micro:bit is still advertising
-    logMessage('Waiting briefly for Bluetooth stack to be ready after scan...');
-    await new Promise(resolve => setTimeout(resolve, 200)); // Short delay - connect quickly while advertising
-
-    logMessage('Calling bluetooth.connect()...');
+    await new Promise(resolve => setTimeout(resolve, 200));
     await bluetooth.connect(requestState);
-    logMessage('Connection successful!');
     return bluetooth;
   } catch (e) {
     logError('Failed to start Bluetooth connection with selected device', e);
-    logError('Connection error details:', { message: (e as any)?.message || String(e), type: typeof e, keys: e ? Object.keys(e) : [] });
     return undefined;
   }
 }
