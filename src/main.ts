@@ -11,6 +11,17 @@ import 'virtual:windi.css';
 if (typeof (window as any).Capacitor !== 'undefined') {
   // Capacitor is available - app is running in native context
   console.log('Capacitor detected - running in native app');
+  
+  // Initialize Bluetooth LE plugin once globally (iOS requirement)
+  // This prevents "XPC connection invalid" errors from repeated initialization
+  import('./script/microbit-interfacing/CapacitorMicrobitBluetooth').then((module) => {
+    if (module.initializeBluetoothLEOnce) {
+      module.initializeBluetoothLEOnce().catch((error) => {
+        console.warn('Failed to initialize Bluetooth LE plugin at startup:', error);
+        // Don't throw - app can still work, initialization will be retried when needed
+      });
+    }
+  });
 }
 
 const app = new App({

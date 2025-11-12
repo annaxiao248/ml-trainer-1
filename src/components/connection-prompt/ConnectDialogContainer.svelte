@@ -223,15 +223,26 @@
   };
 
   const onCapacitorDeviceSelect = async (device: { deviceId: string; name?: string; rssi?: number }) => {
+    console.log('=== CAPACITOR DEVICE SELECTED ===');
+    console.log('Selected device:', device);
+    console.log('Device state:', $connectionDialogState.deviceState);
+
     $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_CONNECTING;
     try {
+      console.log('Calling startBluetoothConnectionWithDevice...');
       const success = await startBluetoothConnectionWithDevice(device, $connectionDialogState.deviceState);
+      console.log('Connection result:', success);
+
       if (success) {
+        console.log('Connection successful, ending flow');
         endFlow();
       } else {
+        console.log('Connection failed, showing try again dialog');
         $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_TRY_AGAIN;
       }
     } catch (e) {
+      console.error('Exception during device connection:', e);
+      console.error('Exception details:', { message: (e as any)?.message || String(e), type: typeof e, keys: e ? Object.keys(e) : [] });
       $connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH_TRY_AGAIN;
     }
   };
@@ -426,8 +437,10 @@
         deviceState={$connectionDialogState.deviceState} />
     {:else if $connectionDialogState.connectionState === ConnectDialogStates.CONNECT_TUTORIAL_BLUETOOTH}
       <SelectMicrobitDialogBluetooth
-        onBackClick={() =>
-          ($connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH)}
+        onBackClick={() => {
+          console.log('=== CAPACITOR BACK BUTTON CLICKED ===');
+          ($connectionDialogState.connectionState = ConnectDialogStates.BLUETOOTH);
+        }}
         onNextClick={tryMicrobitBluetoothConnection} />
     {:else if $connectionDialogState.connectionState === ConnectDialogStates.CONNECT_TUTORIAL_CAPACITOR}
       <SelectMicrobitDialogCapacitor

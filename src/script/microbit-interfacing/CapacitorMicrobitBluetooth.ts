@@ -57,6 +57,10 @@ interface BleDescriptor {
   deviceId: string;
 }
 
+// Global flag to track if Bluetooth has been initialized
+let bluetoothInitialized = false;
+let bluetoothInitializationPromise: Promise<void> | null = null;
+
 // Helper to get the Capacitor Bluetooth plugin
 function getBluetoothPlugin(): any {
   const Capacitor = (window as any).Capacitor;
@@ -73,6 +77,45 @@ function getBluetoothPlugin(): any {
   } catch (e) {
     throw new Error('Bluetooth LE plugin not available. Please install @capacitor-community/bluetooth-le');
   }
+}
+
+/**
+ * Initialize Bluetooth LE plugin once globally
+ * This should be called once when the app starts, not before each connection
+ */
+export async function initializeBluetoothLEOnce(): Promise<void> {
+  // If already initialized, return immediately
+  if (bluetoothInitialized) {
+    return;
+  }
+
+  // If initialization is in progress, wait for it
+  if (bluetoothInitializationPromise) {
+    return bluetoothInitializationPromise;
+  }
+
+  // Start initialization
+  bluetoothInitializationPromise = (async () => {
+    try {
+      const bluetoothPlugin = getBluetoothPlugin();
+      logMessage('Initializing Bluetooth LE plugin globally (one-time initialization)...');
+      await bluetoothPlugin.initialize();
+      bluetoothInitialized = true;
+      logMessage('Bluetooth LE plugin initialized successfully');
+    } catch (e: any) {
+      // If already initialized, that's fine
+      if (e.message && e.message.includes('already initialized')) {
+        logMessage('Bluetooth LE plugin already initialized');
+        bluetoothInitialized = true;
+      } else {
+        logError('Failed to initialize Bluetooth LE plugin', e);
+        bluetoothInitializationPromise = null; // Allow retry
+        throw e;
+      }
+    }
+  })();
+
+  return bluetoothInitializationPromise;
 }
 
 type OutputCharacteristics = {
@@ -120,20 +163,23 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
   }
 
   /**
-   * Initialize the Bluetooth LE plugin if not already initialized
+   * Ensure Bluetooth is initialized (but don't initialize again if already done)
    */
   private async ensureInitialized(): Promise<void> {
+    // Use the global initialization function
+    await initializeBluetoothLEOnce();
+    
+    // Check authorization status if available
     try {
-      await this.bluetoothPlugin.initialize();
-      logMessage('Bluetooth LE plugin initialized');
-    } catch (e: any) {
-      // If already initialized, that's fine
-      if (e.message && e.message.includes('already initialized')) {
-        logMessage('Bluetooth LE plugin already initialized');
-      } else {
-        logError('Failed to initialize Bluetooth LE plugin', e);
-        throw e;
+      if (this.bluetoothPlugin.getAuthorizationStatus) {
+        const authStatus = await this.bluetoothPlugin.getAuthorizationStatus();
+        logMessage('Bluetooth authorization status:', authStatus);
+        if (authStatus && authStatus !== 'granted' && authStatus !== 'allowed') {
+          logMessage('Warning: Bluetooth authorization may not be granted:', authStatus);
+        }
       }
+    } catch (authError) {
+      logMessage('Could not check authorization status (may not be supported):', authError);
     }
   }
 
@@ -160,18 +206,200 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
       // Ensure Bluetooth LE is initialized
       await this.ensureInitialized();
 
-      // Connect to the device
-      logMessage('Connecting to device via Capacitor Bluetooth');
-      await this.bluetoothPlugin.connect({
-        deviceId: this.deviceId,
-        timeout: 5000 // 5 second timeout for connection (shorter)
+      // Verify Bluetooth is enabled
+      try {
+        if (this.bluetoothPlugin.isEnabled) {
+          const isEnabled = await this.bluetoothPlugin.isEnabled();
+          logMessage('Bluetooth enabled status:', isEnabled);
+          if (!isEnabled) {
+            throw new Error('Bluetooth is not enabled on the device. Please enable Bluetooth in iOS Settings.');
+          }
+        }
+      } catch (enableError) {
+        logMessage('Could not check Bluetooth enabled status:', enableError);
+      }
+
+      // Verify plugin is working by checking available methods
+      logMessage('Bluetooth plugin methods available:', {
+        hasConnect: typeof this.bluetoothPlugin.connect === 'function',
+        hasIsConnected: typeof this.bluetoothPlugin.isConnected === 'function',
+        hasDisconnect: typeof this.bluetoothPlugin.disconnect === 'function',
+        pluginKeys: Object.keys(this.bluetoothPlugin || {})
       });
+
+      // Check if device is already connected using getConnectedDevices
+      let isAlreadyConnected = false;
+      try {
+        if (this.bluetoothPlugin.getConnectedDevices) {
+          const connectedDevices = await this.bluetoothPlugin.getConnectedDevices({
+            services: [] // Empty array to get all connected devices
+          });
+          logMessage('Currently connected devices:', connectedDevices);
+          if (connectedDevices && Array.isArray(connectedDevices)) {
+            isAlreadyConnected = connectedDevices.some((device: any) => 
+              (device.deviceId || device.id) === this.deviceId
+            );
+            logMessage('Device connection status check:', { isAlreadyConnected, deviceId: this.deviceId });
+          }
+        }
+      } catch (checkError) {
+        logMessage('Could not check connected devices (may not be supported):', checkError);
+      }
+
+      // Connect to the device
+      logMessage('Connecting to device via Capacitor Bluetooth', {
+        deviceId: this.deviceId,
+        timeout: StaticConfiguration.connectTimeoutDuration,
+        isAlreadyConnected
+      });
+
+      if (!isAlreadyConnected) {
+        // Retry connection up to 2 times with delays
+        const maxRetries = 2;
+        let lastError: any = null;
+        
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          if (attempt > 0) {
+            // Before retrying, ensure any previous connection attempt is fully cleaned up
+            logMessage('Cleaning up previous connection attempt...');
+            try {
+              // Try to disconnect if there's a lingering connection
+              await this.bluetoothPlugin.disconnect({ deviceId: this.deviceId });
+              logMessage('Disconnected previous attempt');
+            } catch (disconnectError) {
+              logMessage('No previous connection to disconnect (this is OK):', disconnectError);
+            }
+            
+            // Wait longer between retries to let the peripheral fully reset
+            // The micro:bit needs time to return to pairing mode
+            const delay = 2000 + (1000 * attempt); // 2s, 3s delays
+            logMessage(`Waiting ${delay}ms before retry (attempt ${attempt + 1}/${maxRetries + 1})...`);
+            logMessage('Please ensure the micro:bit is still in pairing mode (LED pattern visible)');
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+
+          try {
+            // Use a longer timeout for iOS - micro:bit pairing can take time
+            // iOS Core Bluetooth sometimes needs more time to complete the connection
+            const connectionTimeout = StaticConfiguration.connectTimeoutDuration * 1.5; // 15 seconds
+            
+            const connectOptions: any = {
+              deviceId: this.deviceId,
+              timeout: connectionTimeout
+            };
+
+            logMessage(`Connection attempt ${attempt + 1}/${maxRetries + 1} with options:`, connectOptions);
+            logMessage('Starting connection - micro:bit should show smiley face if connection is being attempted');
+
+            // iOS requires explicit service UUIDs in connect() - otherwise it times out
+            // Add the micro:bit service UUIDs to help iOS discover services
+            const connectOptionsWithServices: any = {
+              deviceId: this.deviceId,
+              timeout: connectionTimeout,
+              services: [
+                MBSpecs.Services.UART_SERVICE,
+                MBSpecs.Services.ACCEL_SERVICE,
+                MBSpecs.Services.DEVICE_INFO_SERVICE,
+                MBSpecs.Services.LED_SERVICE,
+                MBSpecs.Services.IO_SERVICE,
+                MBSpecs.Services.BUTTON_SERVICE,
+              ]
+            };
+
+            logMessage('Connecting with service UUIDs specified for iOS compatibility');
+
+            await this.bluetoothPlugin.connect(connectOptionsWithServices);
+            logMessage('Connect() call completed successfully');
+            
+            // Wait for the connection to stabilize on iOS
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // If connect() resolved successfully, trust it - the connection is established
+            // getConnectedDevices() may not immediately reflect the connection due to timing
+            // The native logs show "Connection successful" which is the authoritative source
+            logMessage('Connection established successfully - proceeding with service discovery');
+            break; // Success, exit retry loop
+            
+          } catch (connectError: any) {
+            lastError = connectError;
+            logError(`Connection attempt ${attempt + 1} failed`, connectError);
+            logError('Connection error details:', {
+              message: connectError?.message,
+              errorMessage: connectError?.errorMessage,
+              code: connectError?.code,
+              error: String(connectError),
+              keys: connectError ? Object.keys(connectError) : []
+            });
+            
+            // If this is the last attempt, throw the error
+            if (attempt === maxRetries) {
+              const errorMessage = connectError?.message || connectError?.errorMessage || String(connectError);
+              if (errorMessage.includes('timeout') || errorMessage.includes('Connection timeout')) {
+                throw new Error('Connection timeout after multiple attempts. The micro:bit is responding (showing smiley/sad faces) but iOS cannot complete the connection. This may be a firmware or compatibility issue. Try:\n1. Flashing the micro:bit with the latest firmware\n2. Ensuring the micro:bit stays in pairing mode throughout all connection attempts\n3. Restarting the iPad Bluetooth (Settings > Bluetooth > toggle off/on)\n4. Trying a different micro:bit if available');
+              }
+              throw connectError;
+            }
+            // Otherwise, continue to next retry
+          }
+        }
+        
+        if (lastError && !this.isConnected) {
+          throw lastError;
+        }
+      } else {
+        logMessage('Device appears to already be connected, skipping connect call');
+      }
 
       this.isConnected = true;
       logMessage('Device connected via Capacitor Bluetooth');
 
+      // On iOS, services need to be discovered after connection
+      // The plugin may do this automatically, but we should wait a bit for services to be available
+      logMessage('Waiting for services to be discovered...');
+      await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to allow service discovery
+
+      // Discover services explicitly if the plugin supports it
+      try {
+        const servicesToDiscover = [
+          MBSpecs.Services.DEVICE_INFO_SERVICE,
+          MBSpecs.Services.ACCEL_SERVICE,
+          MBSpecs.Services.BUTTON_SERVICE,
+          MBSpecs.Services.UART_SERVICE,
+          MBSpecs.Services.LED_SERVICE,
+          MBSpecs.Services.IO_SERVICE,
+        ];
+        
+        // Try to discover services if the method exists
+        if (this.bluetoothPlugin.discoverServices) {
+          logMessage('Discovering services...');
+          await this.bluetoothPlugin.discoverServices({
+            deviceId: this.deviceId,
+            services: servicesToDiscover,
+          });
+          logMessage('Services discovered successfully');
+        } else {
+          logMessage('Plugin does not support explicit service discovery, relying on automatic discovery');
+        }
+      } catch (discoverError: any) {
+        // Service discovery might not be necessary or might fail - log but continue
+        logMessage('Service discovery note:', discoverError?.message || 'Unknown error');
+        // Continue anyway - the plugin might handle service discovery automatically
+      }
+
+      // Wait a bit more for the connection to be fully established
+      // iOS sometimes needs a moment after connect() returns
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       // Get model number
-      const microbitVersion = await this.getModelNumber();
+      let microbitVersion: MBSpecs.MBVersion;
+      try {
+        microbitVersion = await this.getModelNumber();
+      } catch (modelError: any) {
+        logError('Failed to read model number, retrying...', modelError);
+        // Retry once after a short delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        microbitVersion = await this.getModelNumber();
+      }
 
       states.forEach(stateOnConnected);
       
@@ -531,19 +759,36 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
         throw new Error('Could not read model number value');
       }
 
-      const dataView = new DataView(new Uint8Array(value).buffer);
+      let bytes: Uint8Array;
+      
+      // Handle different value formats from the plugin
+      if (typeof value === 'string') {
+        // Value is a hex string (e.g., "424243206d6963726f3a626974205632")
+        logMessage('Model number value is hex string:', value);
+        bytes = new Uint8Array(value.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []);
+      } else if (Array.isArray(value)) {
+        // Value is an array of numbers
+        bytes = new Uint8Array(value);
+      } else {
+        // Value is already a Uint8Array or ArrayBuffer
+        bytes = value instanceof Uint8Array ? value : new Uint8Array(value);
+      }
+
       const decoder = new TextDecoder();
-      const decodedModelNumber = decoder.decode(dataView);
+      const decodedModelNumber = decoder.decode(bytes);
+      logMessage('Decoded model number:', decodedModelNumber);
 
       if (decodedModelNumber.toLowerCase() === 'BBC micro:bit'.toLowerCase()) {
         return 1;
       }
-      if (decodedModelNumber.toLowerCase().includes('BBC micro:bit v2'.toLowerCase())) {
+      if (decodedModelNumber.toLowerCase().includes('BBC micro:bit v2'.toLowerCase()) || 
+          decodedModelNumber.toLowerCase().includes('v2')) {
         return 2;
       }
       throw new Error(`Unexpected model number ${decodedModelNumber}`);
     } catch (e) {
       logError('Could not read model number (Capacitor)', e);
+      logError('Model number read error details:', { error: e, value: (e as any)?.value });
       throw new Error('Could not read model number');
     }
   }

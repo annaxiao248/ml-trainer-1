@@ -79,19 +79,14 @@ async function requestCapacitorBluetoothDevice(name: string): Promise<any | unde
       throw new Error('Bluetooth LE plugin not available. Please install @capacitor-community/bluetooth-le');
     }
 
-    // Initialize the Bluetooth LE plugin first
-    logMessage('Initializing Bluetooth LE plugin...');
+    // Use global initialization (don't initialize again)
     try {
-      await bluetoothPlugin.initialize();
-      logMessage('Bluetooth LE plugin initialized');
+      const { initializeBluetoothLEOnce } = await import('./CapacitorMicrobitBluetooth');
+      await initializeBluetoothLEOnce();
+      logMessage('Bluetooth LE plugin ready');
     } catch (e: any) {
-      // If already initialized, that's fine
-      if (e.message && e.message.includes('already initialized')) {
-        logMessage('Bluetooth LE plugin already initialized');
-      } else {
-        logError('Failed to initialize Bluetooth LE plugin', e);
-        // Try to continue anyway - might already be initialized
-      }
+      logError('Failed to ensure Bluetooth LE plugin is initialized', e);
+      // Try to continue anyway - might already be initialized
     }
 
     // Request permissions
@@ -197,19 +192,14 @@ export async function scanCapacitorBluetoothDevices(): Promise<Array<{ deviceId:
     throw new Error('Bluetooth LE plugin not available. Please install @capacitor-community/bluetooth-le');
   }
 
-  // Initialize the Bluetooth LE plugin first
-  logMessage('Initializing Bluetooth LE plugin for scanning...');
+  // Use global initialization (don't initialize again)
   try {
-    await bluetoothPlugin.initialize();
-    logMessage('Bluetooth LE plugin initialized');
+    const { initializeBluetoothLEOnce } = await import('./CapacitorMicrobitBluetooth');
+    await initializeBluetoothLEOnce();
+    logMessage('Bluetooth LE plugin ready for scanning');
   } catch (e: any) {
-    // If already initialized, that's fine
-    if (e.message && e.message.includes('already initialized')) {
-      logMessage('Bluetooth LE plugin already initialized');
-    } else {
-      logError('Failed to initialize Bluetooth LE plugin', e);
-      // Try to continue anyway - might already be initialized
-    }
+    logError('Failed to ensure Bluetooth LE plugin is initialized', e);
+    // Try to continue anyway - might already be initialized
   }
 
   // The requestLEScan method appears to handle both permissions and scanning
@@ -405,15 +395,32 @@ export async function startBluetoothConnectionWithDevice(
 
     logMessage(`Starting Bluetooth connection with selected device: ${device.name || 'Unknown'} (${deviceId})`);
 
+    // Create device object in the format expected by CapacitorMicrobitBluetooth
+    const capacitorDevice = {
+      deviceId: deviceId,
+      name: device.name,
+      // Add other properties that might be expected
+    };
+
     // Reuse connection objects for the same device
     const bluetooth =
       deviceIdToConnection.get(deviceId) ??
-      new CapacitorMicrobitBluetooth(name, device);
+      new CapacitorMicrobitBluetooth(name, capacitorDevice);
     deviceIdToConnection.set(deviceId, bluetooth);
+
+    // Wait a short moment after scanning stops before attempting connection
+    // But keep it short - iOS doesn't cache advertisement data, so we need to connect quickly
+    // while the micro:bit is still advertising
+    logMessage('Waiting briefly for Bluetooth stack to be ready after scan...');
+    await new Promise(resolve => setTimeout(resolve, 200)); // Short delay - connect quickly while advertising
+
+    logMessage('Calling bluetooth.connect()...');
     await bluetooth.connect(requestState);
+    logMessage('Connection successful!');
     return bluetooth;
   } catch (e) {
     logError('Failed to start Bluetooth connection with selected device', e);
+    logError('Connection error details:', { message: (e as any)?.message || String(e), type: typeof e, keys: e ? Object.keys(e) : [] });
     return undefined;
   }
 }
