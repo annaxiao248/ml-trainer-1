@@ -153,7 +153,7 @@
   "connectMB.radioStart.requirements3": "Micro USB cable",
   "connectMB.radioStart.requirements4": "Battery holder",
   "connectMB.radioStart.requirements4.subtitle": "with batteries",
-  "connectMB.radioStart.switchBluetooth": "Connect using Web Bluetooth instead",
+  "connectMB.radioStart.switchBluetooth": "Connect using Bluetooth instead",
 
   "connectMB.bluetoothStart.heading": "What you need to connect using Web Bluetooth",
   "connectMB.bluetoothStart.requirements1": "1 micro:bit",
