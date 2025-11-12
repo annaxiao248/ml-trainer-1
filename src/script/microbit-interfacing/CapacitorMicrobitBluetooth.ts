@@ -5,7 +5,8 @@
  */
 
 import StaticConfiguration from '../../StaticConfiguration';
-import { outputting } from '../stores/uiStore';
+import { outputting, state } from '../stores/uiStore';
+import { get } from 'svelte/store';
 import { logError, logEvent, logMessage } from '../utils/logging';
 import MBSpecs from './MBSpecs';
 import MicrobitConnection, { DeviceRequestStates } from './MicrobitConnection';
@@ -439,6 +440,13 @@ export class CapacitorMicrobitBluetooth implements MicrobitConnection {
   async reconnect(finalAttempt: boolean = false): Promise<void> {
     this.finalAttempt = finalAttempt;
     this.isReconnect = true;
+    
+    // Restore inUseAs from reconnect state since it was cleared during disconnect
+    const reconnectState = get(state).reconnectState;
+    if (reconnectState.inUseAs.size > 0) {
+      this.inUseAs = new Set(reconnectState.inUseAs);
+    }
+    
     const as = Array.from(this.inUseAs);
     await this.reconnectReadyPromise;
     await this.connect(...as);
